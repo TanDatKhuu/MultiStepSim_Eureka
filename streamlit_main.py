@@ -62,7 +62,7 @@ def render_navbar():
     col1, col2, col3, col5 = st.columns([3, 1.5, 1.5, 1.5])
 
     with col1:
-        icon_path_nav = os.path.join(FIG_FOLDER, "icon app.png")
+        icon_path_nav = os.path.join(FIG_FOLDER, "icon-app-eureka.png")
         img_tag = ""
         if os.path.exists(icon_path_nav):
             with open(icon_path_nav, "rb") as img_file:
@@ -2060,9 +2060,9 @@ def show_welcome_page():
                 st.markdown(f"<div class='project-title'>{tr('welcome_project_title').replace('\\n', '<br>')}</div>", unsafe_allow_html=True)
                 st.markdown(f"<p class='welcome-text'>{tr('main_desc')}</p>", unsafe_allow_html=True)
             with col5:
-                main_image_path = os.path.join(FIG_FOLDER, "multi.png") 
+                main_image_path = os.path.join(FIG_FOLDER, "multi1.png") 
                 if os.path.exists(main_image_path): st.image(main_image_path)
-                else: st.warning("Không tìm thấy file 'multi.png' trong thư mục 'fig'.")
+                else: st.warning("Không tìm thấy file 'multi1.png' trong thư mục 'fig'.")
             
             st.write("")
             st.write("") # Thêm một khoảng trống để thay cho phần tên tác giả
