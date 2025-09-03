@@ -2036,6 +2036,7 @@ def main():
 
 # --- Thay thế hàm show_welcome_page cũ ---
 def show_welcome_page():
+    # Phần CSS giữ nguyên
     st.markdown("""
         <style>
         .main { background-color: #E6ECF4; }
@@ -2048,20 +2049,15 @@ def show_welcome_page():
         }
         </style>
     """, unsafe_allow_html=True)
+
+    # Chỉ hiển thị nội dung nếu là trang "home"
     if st.session_state.welcome_subpage == "home":
-            col1, col2, col3 = st.columns([1, 4, 1], vertical_alignment="center") 
-            with col1:
-                logo_tdtu_path = os.path.join(FIG_FOLDER, "logotdtu1.png")
-                if os.path.exists(logo_tdtu_path): st.image(logo_tdtu_path)
-            with col2:
-                st.markdown(f"<div class='header-col'><h2>{tr('welcome_uni')}</h2><h2>{tr('welcome_faculty')}</h2></div>", unsafe_allow_html=True)
-            with col3:
-                logo_faculty_path = os.path.join(FIG_FOLDER, "logokhoa1@2.png")
-                if os.path.exists(logo_faculty_path): st.image(logo_faculty_path, width=100)
-                else: st.write("[Faculty Logo Error]")
             
-            st.divider() 
+            # === KHỐI LOGO VÀ TÊN TRƯỜNG ĐÃ BỊ XÓA ===
+            # col1, col2, col3 ... đã bị xóa
+            # st.divider() đã bị xóa
             
+            # Giữ lại phần giới thiệu chính
             col4, col5 = st.columns([1.5, 1], vertical_alignment="center")
             with col4:
                 st.markdown(f"<div class='project-title'>{tr('welcome_project_title').replace('\\n', '<br>')}</div>", unsafe_allow_html=True)
@@ -2072,20 +2068,20 @@ def show_welcome_page():
                 else: st.warning("Không tìm thấy file 'multi.png' trong thư mục 'fig'.")
             
             st.write("")
-            col6, col7 = st.columns(2)
-            with col6:
-                st.markdown(f"<div class='welcome-credits'><h3>{tr('welcome_authors_title')}</h3><p>{tr('welcome_authors_names')}</p></div>", unsafe_allow_html=True)
-            with col7:
-                st.markdown(f"<div class='welcome-credits'><h3>{tr('welcome_advisors_title')}</h3><p>{tr('welcome_advisor1')}  &  {tr('welcome_advisor2')}</p></div>", unsafe_allow_html=True)
-            st.write("") 
+            st.write("") # Thêm một khoảng trống để thay cho phần tên tác giả
             
+            # === KHỐI TÊN TÁC GIẢ VÀ GVHD ĐÃ BỊ XÓA ===
+            # col6, col7 ... đã bị xóa
+            
+            # Giữ lại nút bắt đầu
             _, col_start_btn, _ = st.columns([2, 1, 2])
             with col_start_btn:
                 if st.button(f"**{tr('start_button')}**", use_container_width=True, type="primary"):
                     st.session_state.page = 'model_selection'
                     st.rerun()
+
+    # Phần trang liên hệ (contact) giữ nguyên
     elif st.session_state.welcome_subpage == "contact":
-            # Chọn file contact dựa trên ngôn ngữ hiện tại
             lang_code = st.session_state.lang
             contact_filename = f"contact_{lang_code}.txt"
             contact_file_path = os.path.join(base_path, contact_filename)
@@ -2097,7 +2093,7 @@ def show_welcome_page():
             else:
                 st.error(f"Không tìm thấy file {contact_filename}.")
 
-    st.markdown('</div>', unsafe_allow_html=True) 
+    st.markdown('</div>', unsafe_allow_html=True)
 # --- Thay thế hàm show_model_selection_page cũ ---
 def show_model_selection_page():   
     # --- CSS TÙY CHỈNH (giữ nguyên) ---
