@@ -58,7 +58,8 @@ def tr(key):
 	
 def render_navbar():
     # Sử dụng st.columns để tạo layout cho thanh nav
-    col1, col2, col3, col4, col5 = st.columns([3, 1.5, 1.5, 1, 1.5])
+    # Đã xóa col4 và tỉ lệ của nó (số 1)
+    col1, col2, col3, col5 = st.columns([3, 1.5, 1.5, 1.5])
 
     with col1:
         icon_path_nav = os.path.join(FIG_FOLDER, "icon app.png")
@@ -80,11 +81,7 @@ def render_navbar():
             st.session_state.welcome_subpage = "home"
             st.rerun()
 
-    with col4:
-        if st.button(tr("nav_contact"), use_container_width=True, key="nav_contact_btn"): 
-            st.session_state.page = "welcome"
-            st.session_state.welcome_subpage = "contact"
-            st.rerun()
+    # Khối "with col4" đã được xóa hoàn toàn
     
     with col5:
         def on_lang_change():
