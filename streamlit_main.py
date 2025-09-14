@@ -3174,7 +3174,8 @@ def show_simulation_page():
             sorted_methods = sorted(results.keys(), key=lambda x: method_order.index(x) if x in method_order else 99)
             
             for method_short in sorted_methods:
-                step_results = results[method_short]
+                step_results = results.get(method_short, {})
+                if not step_results: continue # Bỏ qua nếu phương pháp không có kết quả
                 
                 # Lấy tên hiển thị của phương pháp
                 method_key_map = {"Bashforth": "ab", "Moulton": "am", "RungeKutta": "rk"}
@@ -3193,8 +3194,8 @@ def show_simulation_page():
                     else:
                         run_title = f"{tr('screen2_steps_label')} {step}"
 
-                    # Dùng expander cho mỗi lần chạy (mỗi bậc/số bước)
-                    with st.expander(run_title):
+                    # SỬA LỖI Ở ĐÂY: Dùng `label=` thay vì `key=`
+                    with st.expander(label=run_title):
                         slope_str = f"{res.get('order_slope', 'N/A'):.4f}" if isinstance(res.get('order_slope'), float) else "N/A"
                         st.markdown(f"**{tr('screen2_info_area_show_data_order')}** {slope_str}")
                         
