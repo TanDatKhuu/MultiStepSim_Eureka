@@ -2937,7 +2937,7 @@ def show_simulation_page():
                 else:
                     is_valid = False
                     error_messages.append(tr('msg_select_step_for_method', "Vui lòng chọn bậc cho {0}.").format(tr('screen2_method_rk')))
-           if not (st.session_state.cb_ab or st.session_state.cb_am or st.session_state.cb_rk):
+            if not (st.session_state.cb_ab or st.session_state.cb_am or st.session_state.cb_rk):
                 error_messages.append(tr('msg_select_method')); is_valid = False
             if 't0' in param_inputs and 't1' in param_inputs and param_inputs['t1'] <= param_inputs['t0']:
                 error_messages.append(tr('msg_t_end_error')); is_valid = False
