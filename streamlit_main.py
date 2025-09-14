@@ -2473,8 +2473,8 @@ def _prepare_simulation_functions(model_data, input_params, selected_method_shor
         if not callable(ode_gen):
             raise ValueError(tr("msg_model_no_ode").format(tr(f"{model_id}_name")))
         
-        t_start = input_params['t₀']
-        t_end = input_params['t₁']
+        t_start = input_params['t0']
+        t_end = input_params['t1']
         y0 = None
         calculated_params = {} # Dictionary để lưu các giá trị tính toán được
 
