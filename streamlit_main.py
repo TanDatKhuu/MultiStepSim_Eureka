@@ -3487,7 +3487,7 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
 
     gif_buf = io.BytesIO()
     # THAY ĐỔI: Đặt loop=1 để GIF không lặp lại
-    with imageio.get_writer(gif_buf, mode='I', format='gif', duration=0.1 / speed_multiplier, loop=1) as writer:
+    with imageio.get_writer(gif_buf, mode='I', format='gif', duration=0.1 / speed_multiplier, loop=None) as writer:
         try:
             fig, ax = plt.subplots(figsize=(8, 8), dpi=80)
             final_stats = {}
