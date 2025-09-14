@@ -88,7 +88,8 @@
 	"model6_component_C": "Concentration C ($y_C$)",
 	"screen2_plot_exact_sol_label": "Exact Solution",
     "screen2_plot_ref_sol_label": "Reference Solution (RK5)",
-	"screen2_details_group_rk": "2. Runge-Kutta Details",
+	"screen2_details_group": "2. Details"
+	"screen2_details_group_rk": "Runge-Kutta Details",
 	"msg_select_step_for_method": "Please select at least one step/order for the {0} method."
     "screen2_order_label": "Order:",
     "screen2_select_all_steps_cb": "All",
@@ -104,8 +105,8 @@
 	"screen2_method_ab": "Adams-Bashforth (AB)",
 	"screen2_method_am": "Adams-Moulton (AM)",
 	"screen2_method_rk": "Runge-Kutta (RK)",
-	"screen2_details_group_ab": "2. Adams-Bashforth details",
-	"screen2_details_group_am": "2. Adams-Moulton details",
+	"screen2_details_group_ab": "Adams-Bashforth details",
+	"screen2_details_group_am": "Adams-Moulton details",
 	"screen2_steps_label": "Number of steps:",
 	"screen2_select_all_steps_cb": "All",
 	"screen2_step2": "2-step",
