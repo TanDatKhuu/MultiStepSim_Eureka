@@ -2806,7 +2806,7 @@ def show_simulation_page():
         select_rk = st.checkbox(tr('screen2_method_rk'), value=False, key='cb_rk')
         st.divider()
         with st.form(key='simulation_form'):
-			st.header(tr('screen2_details_group'))
+            st.header(tr('screen2_details_group'))
             # 1. Khu vực chi tiết cho Adams-Bashforth
             if select_ab:
                 st.subheader(tr('screen2_details_group_ab'))
