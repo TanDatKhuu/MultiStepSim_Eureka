@@ -3105,7 +3105,7 @@ def show_simulation_page():
             ax_err.grid(True, which='both', linestyle=':'); ax_err.legend(fontsize='small')
             fig_err.tight_layout()
             figs['error'] = fig_err
-		    
+
 		    # Đồ thị bậc hội tụ
             fig_ord = Figure(figsize=plot_figsize)
             ax_ord = fig_ord.subplots()
