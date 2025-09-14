@@ -2976,7 +2976,7 @@ def show_simulation_page():
 
         can_run_dynamic = model_data.get("can_run_abm_on_screen3", False) or model_id in ['model2', 'model5']
         if can_run_dynamic:
-			if st.button(f"{tr('screen2_goto_screen3_button')} :keyboard_double_arrow_right:", use_container_width=True, type="primary"):
+            if st.button(f"{tr('screen2_goto_screen3_button')} :keyboard_double_arrow_right:", use_container_width=True, type="primary"):
                 # Logic mới: Lấy phương pháp đầu tiên có kết quả để tạo dữ liệu động
                 first_method_key = next(iter(results.keys()), None)
                 if first_method_key:
