@@ -3229,10 +3229,20 @@ def run_and_prepare_m5s1_animation_data(_validated_params_json):
     t0, t1 = params_s2.get('t0', 0.0), params_s2.get('t1', 10.0)
 
     t_end_final = t1
-    if v > u:
+    if u >= v:
+	    # Khi nước chảy nhanh/mạnh hơn, cần mô phỏng trong thời gian dài hơn
+	    # để thấy được hiệu ứng trôi dạt của thuyền.
         time_to_cross_min = abs(x0 / v) if v != 0 else float('inf')
-        t_max_reasonable = time_to_cross_min * 5
-        t_end_final = max(t1, t_max_reasonable) + 2.0
+	    
+	    # Tạo ra một khoảng thời gian tối đa hợp lý, tỷ lệ với độ "mạnh" của dòng nước so với thuyền
+        t_max_reasonable = time_to_cross_min * (u / v if v != 0 else 5.0)
+	    
+	    # Lấy thời gian lớn hơn giữa thời gian người dùng nhập và thời gian tính toán,
+	    # cộng thêm một chút để đảm bảo
+        t_end_final = max(t1, t_max_reasonable) * 1.2 
+    else:
+	    # Khi thuyền nhanh hơn, dùng t1 của người dùng là đủ
+        t_end_final = t1
 
     model_data = MODELS_DATA[LANG_VI["model5_name"]]
     ode_func = model_data["ode_func"](u, v)
