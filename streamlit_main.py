@@ -2951,8 +2951,7 @@ def show_simulation_page():
             # SỬA LỖI 1 & 2 TẠI ĐÂY
             if st.button(
                 tr("screen2_goto_screen3_button"), 
-                icon="keyboard_double_arrow_right",  # SỬA LỖI 1: Dùng tham số icon
-                width='stretch',                      # SỬA LỖI 2: Dùng width='stretch'
+				use_container_width=True, 
                 type="primary",
 				key="goto_dynamic_sim_btn"
             ):
