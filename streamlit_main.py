@@ -2796,7 +2796,7 @@ def show_simulation_page():
             st.rerun()
 
         # Nút Quay lại chọn mô hình
-        if st.button(tr("screen2_back_button"), use_container_width=True):
+        if st.button(tr("screen2_back_button"), type="primary", use_container_width=True):
             _cleanup_and_go_to_model_selection()
         
         st.title(tr("sidebar_title"))
