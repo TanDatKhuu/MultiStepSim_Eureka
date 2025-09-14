@@ -86,6 +86,13 @@
 	"model6_component_A": "Concentration A ($y_A$)",
 	"model6_component_B": "Concentration B ($y_B$)",
 	"model6_component_C": "Concentration C ($y_C$)",
+	"screen2_details_group_rk": "2. Runge-Kutta Details",
+    "screen2_order_label": "Order:",
+    "screen2_select_all_steps_cb": "All",
+    "screen2_order2": "2nd-order",
+    "screen2_order3": "3rd-order",
+    "screen2_order4": "4th-order",
+    "msg_select_order": "Please select at least one order for Runge-Kutta."
 	"go_back_to_select": "Back to model selection",
 	"screen2_back_button": "Back to model selection",
 	"screen2_goto_screen3_button": "View dynamic simulation",
