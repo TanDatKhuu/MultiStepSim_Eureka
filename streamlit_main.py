@@ -3610,9 +3610,20 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                     s_coords, i_coords = abm_instance.get_display_coords(abm_params['display_max_total'], abm_params['display_sample_size'])
                     if s_coords.shape[0] > 0: ax.scatter(s_coords[:, 0], s_coords[:, 1], c='blue', s=20, label=_tr('screen3_legend_abm_susceptible'))
                     if i_coords.shape[0] > 0: ax.scatter(i_coords[:, 0], i_coords[:, 1], c='red', marker='*', s=80, label=_tr('screen3_legend_abm_infected'))
-                    ax.legend()
                     stats = abm_instance.get_current_stats()
-                    ax.set_title(_tr("screen3_abm_anim_plot_title") + f"\nStep: {stats['time_step']} | Infected: {stats['infected_count']}")
+                    seconds_per_step = abm_params.get("seconds_per_step", 0.1) 
+                    # Tính thời gian thực
+                    real_time_seconds = stats['time_step'] * seconds_per_step
+                    
+                    # Lấy các chuỗi đã dịch
+                    title_text = _tr("screen3_model3_anim_plot_title") # Key mới, ví dụ: "Mô phỏng động: Sự lây lan dịch bệnh"
+                    time_label = _tr("screen3_actual_time") # Key có sẵn, ví dụ: "Thời gian thực tế (giây)"
+                    infected_label = _tr("screen3_infected_label_short") # Key mới, ví dụ: "Bị nhiễm"
+
+                    # Tạo tiêu đề mới
+                    full_title = (f"{title_text}\n"
+                                  f"{time_label}: {real_time_seconds:.2f}s | {infected_label}: {stats['infected_count']}")
+                    ax.set_title(full_title)
                     if ended_by_logic: break
 
                 elif model_id == 'model5' and st.session_state.m5_scenario == 1:
@@ -3675,11 +3686,14 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                 }
             elif model_id == 'model3':
                 stats = abm_instance.get_current_stats()
+                seconds_per_step = abm_instance.abm_defaults.get("seconds_per_step", 0.1) # Lấy lại để chắc chắn
+                final_real_time = stats['time_step'] * seconds_per_step
                 final_stats = {
                     _tr('screen3_total_pop'): {'value': stats['total_population']},
                     _tr('screen3_susceptible_pop'): {'value': stats['susceptible_count']},
                     _tr('screen3_infected_pop'): {'value': stats['infected_count']},
-                    _tr('screen3_model3_simulation_time_label'): {'value': stats['time_step']}
+                    # THAY ĐỔI: Hiển thị thời gian thực tế trong kết quả cuối cùng
+                    _tr('screen3_actual_time'): {'value': f"{final_real_time:.2f} s"} 
                 }
             elif model_id == 'model5' and st.session_state.m5_scenario == 1:
                 if sim_data.get('approx_sol_plot_all_components') is not None:
