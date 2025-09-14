@@ -2804,7 +2804,7 @@ def show_simulation_page():
         with st.form(key='simulation_form'):
             st.header(tr('screen2_method_group'))
             select_ab = st.checkbox(tr('screen2_method_ab'), value=True, key='cb_ab')
-            select_am = st.checkbox(tr('screen2_method_am'), value=True, key='cb_am')
+            select_am = st.checkbox(tr('screen2_method_am'), value=False, key='cb_am')
             select_rk = st.checkbox(tr('screen2_method_rk'), value=False, key='cb_rk')
             st.divider()
 
