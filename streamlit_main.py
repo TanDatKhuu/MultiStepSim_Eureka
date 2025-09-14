@@ -3551,8 +3551,10 @@ def run_and_store_model5_scenario2_results():
     }
     solver_func_name = solver_map_names.get(method_short, {}).get(method_steps, "AB4_system_M5_Sim2_CombinedLogic")
     
-    num_solver_steps = int(np.ceil(100 * st.session_state.m5s2_params['simulation_duration']))
-    t_array_solver = np.linspace(st.session_state.m5s2_params['t_start'], st.session_state.m5s2_params['t_end'], num_solver_steps + 1)
+    num_solver_steps = int(np.ceil(30 * st.session_state.m5s2_params['simulation_duration']))
+    num_solver_steps = min(num_solver_steps, 3000)
+    st.info(f"Debug: Solver sẽ chạy với {num_solver_steps} bước.")
+	t_array_solver = np.linspace(st.session_state.m5s2_params['t_start'], st.session_state.m5s2_params['t_end'], num_solver_steps + 1)
     initial_state = np.array([z0_kt_sim[0], z0_kt_sim[1], z_tn_actual_start[0], z_tn_actual_start[1]])
 
     st.session_state.m5s2_results = _run_and_cache_m5_sim2(
@@ -3615,13 +3617,44 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
             
             if not sim_data: return None, {}
 
-            # --- Xác định số lượng frame tối đa ---
+            # === BẮT ĐẦU THAY ĐỔI: LẤY MẪU DỮ LIỆU ===
+            MAX_GIF_FRAMES = 300 # Đặt số frame tối đa cho GIF, 300 là con số hợp lý (khoảng 30s ở 10fps)
+            
+            # Lấy dữ liệu gốc
+            original_t = sim_data.get('t_plot') or sim_data.get('time_points')
+            original_all_components = sim_data.get('approx_sol_plot_all_components') or sim_data.get('state_history')
+
+            if original_t is None or original_all_components is None:
+                return None, {}
+
+            num_original_points = len(original_t)
+
+            # Thực hiện lấy mẫu nếu số điểm gốc lớn hơn MAX_GIF_FRAMES
+            if num_original_points > MAX_GIF_FRAMES:
+                st.info(f"Tối ưu hóa: Lấy {MAX_GIF_FRAMES} mẫu từ {num_original_points} điểm dữ liệu.")
+                indices = np.linspace(0, num_original_points - 1, MAX_GIF_FRAMES, dtype=int)
+                
+                # Tạo sim_data mới đã được lấy mẫu
+                sampled_sim_data = sim_data.copy() # Sao chép các thông tin khác
+                if 't_plot' in sampled_sim_data:
+                    sampled_sim_data['t_plot'] = original_t[indices]
+                if 'time_points' in sampled_sim_data:
+                    sampled_sim_data['time_points'] = original_t[indices]
+                if 'approx_sol_plot_all_components' in sampled_sim_data:
+                    sampled_sim_data['approx_sol_plot_all_components'] = [comp[indices] for comp in original_all_components]
+	            if 'state_history' in sampled_sim_data:
+                    sampled_sim_data['state_history'] = original_all_components[indices]
+                
+                sim_data = sampled_sim_data # Ghi đè sim_data bằng phiên bản đã lấy mẫu
+
+            # --- Xác định số lượng frame tối đa (sử dụng dữ liệu đã lấy mẫu) ---
             num_frames = 0
             if model_id == 'model2': num_frames = len(sim_data.get('t_plot', []))
             elif model_id == 'model3': num_frames = model_data.get("abm_defaults", {}).get("max_steps", 400)
             elif model_id == 'model5' and st.session_state.m5_scenario == 1: num_frames = len(sim_data.get('t_plot', []))
             elif model_id == 'model5' and st.session_state.m5_scenario == 2: num_frames = len(sim_data.get('time_points', []))
             if num_frames == 0 and model_id != 'model3': return None, {}
+            # === KẾT THÚC THAY ĐỔI ===
             
             # --- Khởi tạo đối tượng mô phỏng ---
             abm_instance = None
