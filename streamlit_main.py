@@ -3553,7 +3553,6 @@ def run_and_store_model5_scenario2_results():
     
     num_solver_steps = int(np.ceil(30 * st.session_state.m5s2_params['simulation_duration']))
     num_solver_steps = min(num_solver_steps, 3000)
-    st.info(f"Debug: Solver sẽ chạy với {num_solver_steps} bước.")
     t_array_solver = np.linspace(st.session_state.m5s2_params['t_start'], st.session_state.m5s2_params['t_end'], num_solver_steps + 1)
     initial_state = np.array([z0_kt_sim[0], z0_kt_sim[1], z_tn_actual_start[0], z_tn_actual_start[1]])
 
@@ -3639,7 +3638,6 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
 
             # Thực hiện lấy mẫu nếu số điểm gốc lớn hơn MAX_GIF_FRAMES
             if num_original_points > MAX_GIF_FRAMES:
-                st.info(f"Tối ưu hóa: Lấy {MAX_GIF_FRAMES} mẫu từ {num_original_points} điểm dữ liệu.")
                 indices = np.linspace(0, num_original_points - 1, MAX_GIF_FRAMES, dtype=int)
                 
                 sampled_sim_data = sim_data.copy()
