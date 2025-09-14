@@ -3041,14 +3041,14 @@ def show_simulation_page():
         def generate_and_get_figures(results_data_json, lang, model_id, component):
             results_data = json.loads(results_data_json)
 		    
-		    figs = {}
-		    translations = load_language_file(lang)
-		    def _tr(key): return translations.get(key, key)
+            figs = {}
+            translations = load_language_file(lang)
+            def _tr(key): return translations.get(key, key)
 		
 		    # --- 1. Tạo danh sách tất cả các lần chạy và gán màu ---
-		    all_runs = []
-		    for method_short, step_results in results_data.items():
-		        for step_str, res in step_results.items():
+            all_runs = []
+            for method_short, step_results in results_data.items():
+                for step_str, res in step_results.items():
 		            if res:
 		                label = ""
 		                step_or_order = int(step_str)
