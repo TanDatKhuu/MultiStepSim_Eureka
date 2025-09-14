@@ -236,6 +236,8 @@
     "screen3_result_r_param": "Tham số tốc độ lây nhiễm (r):",
     "screen3_model3_simulation_time_label": "Thời gian mô phỏng ABM (bước):",
     "screen3_actual_time": "Thời gian thực tế (giây):",
+    "screen3_model3_anim_plot_title": "Mô phỏng động: Sự lây lan dịch bệnh",
+    "screen3_infected_label_short": "Bị nhiễm",
     "screen3_total_pop": "Tổng số cá thể ban đầu:",
     "screen3_infected_pop": "Số lượng cá thể bị nhiễm:",
     "screen3_susceptible_pop": "Số lượng cá thể chưa nhiễm:",
