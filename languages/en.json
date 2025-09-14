@@ -89,6 +89,7 @@
 	"screen2_plot_exact_sol_label": "Exact Solution",
     "screen2_plot_ref_sol_label": "Reference Solution (RK5)",
 	"screen2_details_group_rk": "2. Runge-Kutta Details",
+	"msg_select_step_for_method": "Please select at least one step/order for the {0} method."
     "screen2_order_label": "Order:",
     "screen2_select_all_steps_cb": "All",
     "screen2_order2": "2nd-order",
