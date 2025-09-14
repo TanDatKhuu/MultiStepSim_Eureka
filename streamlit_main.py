@@ -3805,7 +3805,11 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                             catch_point = state_hist[catch_frame_idx, 0:2]
                             ax.plot(catch_point[0], catch_point[1], 'gX', markersize=15, label=_tr('screen3_legend_m5s2_catch_point'))
                     ax.set_xlabel(_tr("screen3_model5_plot_xlabel_sim2")); ax.set_ylabel(_tr("screen3_model5_plot_ylabel_sim2"))
-                    ax.grid(True); ax.legend(); ax.set_aspect('equal')
+                    ax.grid(True); ax.legend()
+	                from matplotlib.ticker import MaxNLocator
+	                ax.xaxis.set_major_locator(MaxNLocator(nbins=5, prune='both'))
+	                ax.yaxis.set_major_locator(MaxNLocator(nbins='auto', prune='both'))
+	                ax.tick_params(axis='both', which='major', labelsize=8)
                     time_label = _tr("screen3_result_time").replace(":", "") # Lấy "Thời gian mô phỏng (t)" và bỏ dấu :
                     ax.set_title(f"{_tr('screen3_model5_plot_title_sim2')}\n{time_label}: {t_points[frame_idx]:.2f} {time_unit}")
                     if is_caught and t_points[frame_idx] >= catch_time: break
