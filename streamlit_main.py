@@ -3214,7 +3214,7 @@ def run_and_prepare_m5s1_animation_data(_validated_params_json):
     """
     Chạy lại mô phỏng cho Model 5 Sim 1 để lấy dữ liệu quỹ đạo đầy đủ
     và tính toán các thông số ban đầu cho animation.
-    Hàm này được cache để không phải tính lại mỗi khi rerender.
+    HÀM ĐÃ ĐƯỢC SỬA LẠI ĐỂ GIỐNG HỆT LOGIC CỦA PYSIDE6.
     """
     validated_params = json.loads(_validated_params_json)
     params_s2 = validated_params.get('params', {})
@@ -3228,38 +3228,24 @@ def run_and_prepare_m5s1_animation_data(_validated_params_json):
     x0, y0 = params_s2.get('x0', 10.0), params_s2.get('y0', 0.0)
     t0, t1 = params_s2.get('t0', 0.0), params_s2.get('t1', 10.0)
 
+    # ==========================================================
+    # 1. TÍNH TOÁN LẠI t_end_final VỚI LOGIC VẬT LÝ ĐÚNG
+    # ==========================================================
     t_end_final = t1
-    if u >= v:
-	    # Khi nước chảy nhanh/mạnh hơn, cần mô phỏng trong thời gian dài hơn
-	    # để thấy được hiệu ứng trôi dạt của thuyền.
+    if u >= v: # Sửa điều kiện thành u >= v
         time_to_cross_min = abs(x0 / v) if v != 0 else float('inf')
-	    
-	    # Tạo ra một khoảng thời gian tối đa hợp lý, tỷ lệ với độ "mạnh" của dòng nước so với thuyền
         t_max_reasonable = time_to_cross_min * (u / v if v != 0 else 5.0)
-	    
-	    # Lấy thời gian lớn hơn giữa thời gian người dùng nhập và thời gian tính toán,
-	    # cộng thêm một chút để đảm bảo
-        t_end_final = max(t1, t_max_reasonable) * 1.2 
-    else:
-	    # Khi thuyền nhanh hơn, dùng t1 của người dùng là đủ
-        t_end_final = t1
-
+        t_end_final = max(t1, t_max_reasonable) * 1.2
+    
     model_data = MODELS_DATA[LANG_VI["model5_name"]]
     ode_func = model_data["ode_func"](u, v)
     
-    # Sử dụng bộ solver ..._M5_Sim1 mới
     solver_map_sim1 = {
-        "Bashforth": {
-                2: AB2_system_M5, 3: AB3_system_M5, 
-                4: AB4_system_M5, 5: AB5_system_M5 
-            },
-            "Moulton": {
-                2: AM2_system_M5, 3: AM3_system_M5, 
-                4: AM4_system_M5
-            }
+        "Bashforth": { 2: AB2_system_M5, 3: AB3_system_M5, 4: AB4_system_M5, 5: AB5_system_M5 },
+        "Moulton": { 2: AM2_system_M5, 3: AM3_system_M5, 4: AM4_system_M5 }
     }
     solver_func = solver_map_sim1.get(method_short, {}).get(method_steps)
-    if not solver_func: solver_func = AB4_system_M5_Sim1 # Fallback an toàn
+    if not solver_func: solver_func = AB4_system_M5 # Fallback an toàn
 
     num_points = max(200, int(np.ceil((t_end_final - t0) / h_target)))
     t_array_full = np.linspace(t0, t_end_final, num_points + 1)
@@ -3270,14 +3256,35 @@ def run_and_prepare_m5s1_animation_data(_validated_params_json):
     t_array_actual = t_array_full[:min_len]
     z_array_actual = np.column_stack((recalc_x, recalc_y))
     
-    # Chuẩn bị dữ liệu đồ họa
+    # ==========================================================
+    # 2. TÍNH TOÁN DỮ LIỆU ĐỒ HỌA DỰA TRÊN QUỸ ĐẠO (Y HỆT PYSIDE6)
+    # ==========================================================
     d_val = x0
-    xlim = (-0.1 * d_val, d_val * 1.1)
-    ylim_max = d_val * 0.4
-    y_drift_factor = 2.5
-    ylim_min_calculated = -d_val * (u / v if v > 1e-6 else 1.0) * y_drift_factor
-    ylim_min = min(-d_val, ylim_min_calculated)
-    ylim = (ylim_min, ylim_max)
+    x_traj_min, x_traj_max = np.min(z_array_actual[:, 0]), np.max(z_array_actual[:, 0])
+    y_traj_min, y_traj_max = np.min(z_array_actual[:, 1]), np.max(z_array_actual[:, 1])
+
+    padding_x_standalone = 0.1 * d_val
+    y_range_for_padding_standalone = max(abs(y_traj_max - y_traj_min), 0.5 * d_val)
+    padding_y_abs_standalone = 0.2 * y_range_for_padding_standalone
+
+    xlim_min_standalone = min(x_traj_min - padding_x_standalone, -padding_x_standalone)
+    xlim_max_standalone = max(x_traj_max + padding_x_standalone, d_val + padding_x_standalone)
+
+    ylim_min_calc = min(y_traj_min - padding_y_abs_standalone, y0 - padding_y_abs_standalone)
+    ylim_max_calc = max(y_traj_max + padding_y_abs_standalone, y0 + padding_y_abs_standalone)
+    
+    if ylim_min_calc >= -1.0:
+        ylim_min_standalone = min(ylim_min_calc, -max(2.0, padding_y_abs_standalone))
+    else:
+        ylim_min_standalone = ylim_min_calc
+    
+    if ylim_max_calc <= 1.0:
+        ylim_max_standalone = max(ylim_max_calc, max(2.0, padding_y_abs_standalone))
+    else:
+        ylim_max_standalone = ylim_max_calc
+
+    xlim = (xlim_min_standalone, xlim_max_standalone)
+    ylim = (ylim_min_standalone, ylim_max_standalone)
     
     arrow_data = None
     if u != 0:
