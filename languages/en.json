@@ -236,6 +236,8 @@
 	"screen3_result_r_param": "Infection rate parameter (r):",
 	"screen3_model3_simulation_time_label": "ABM simulation time (steps):",
 	"screen3_actual_time": "Real time elapsed (seconds):",
+	"screen3_model3_anim_plot_title": "Dynamic Simulation: Epidemic Spread",
+    "screen3_infected_label_short": "Infected",
 	"screen3_total_pop": "Initial total population:",
 	"screen3_infected_pop": "Number of infected individuals:",
 	"screen3_susceptible_pop": "Number of susceptible individuals:",
