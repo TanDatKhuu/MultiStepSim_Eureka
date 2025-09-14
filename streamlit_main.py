@@ -3806,7 +3806,7 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                             ax.plot(catch_point[0], catch_point[1], 'gX', markersize=15, label=_tr('screen3_legend_m5s2_catch_point'))
                     ax.set_xlabel(_tr("screen3_model5_plot_xlabel_sim2")); ax.set_ylabel(_tr("screen3_model5_plot_ylabel_sim2"))
                     ax.grid(True); ax.legend()
-	                from matplotlib.ticker import MaxNLocator
+                    from matplotlib.ticker import MaxNLocator
 	                ax.xaxis.set_major_locator(MaxNLocator(nbins=5, prune='both'))
 	                ax.yaxis.set_major_locator(MaxNLocator(nbins='auto', prune='both'))
 	                ax.tick_params(axis='both', which='major', labelsize=8)
