@@ -3764,7 +3764,11 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                     ax.axhline(0, color='slategray', linestyle=':', linewidth=1.2, zorder=0.5)
                     
                     ax.set_xlabel(_tr('screen3_model5_plot_xlabel_sim1')); ax.set_ylabel(_tr('screen3_model5_plot_ylabel_sim1'))
-                    ax.grid(True, linestyle=':'); ax.set_aspect('equal')
+                    ax.grid(True, linestyle=':')
+                    from matplotlib.ticker import MaxNLocator
+                    ax.xaxis.set_major_locator(MaxNLocator(nbins=5, prune='both'))
+                    ax.yaxis.set_major_locator(MaxNLocator(nbins='auto', prune='both'))
+                    ax.tick_params(axis='both', which='major', labelsize=8)
 
                     # THAY ĐỔI: Tái sử dụng key dịch 'screen3_result_time'
                     time_label = _tr("screen3_result_time").replace(":", "") # Bỏ dấu hai chấm
