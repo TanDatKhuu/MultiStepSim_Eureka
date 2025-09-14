@@ -1845,11 +1845,8 @@ MODELS_DATA = {
         "uses_rk5_reference": False,
         "equation_key": "model6_eq",
         "description_key": "model6_desc",
-        
-        # --- THÊM 2 DÒNG NÀY ---
-        "ode_label_key": "model6_ode_system_label", # Key ngôn ngữ riêng cho tiêu đề
-        "hide_exact_solution_display": True, # Cờ để ẩn nghiệm giải tích
-        # --- KẾT THÚC THÊM ---
+        "ode_label_key": "model6_ode_system_label",
+        "hide_exact_solution_display": False, # Hiển thị nghiệm giải tích cho Model 6
         
         "param_keys_vi": [
             LANG_VI["model6_param_yA0"], LANG_VI["model6_param_yB0"], LANG_VI["model6_param_yC0"],
@@ -1857,14 +1854,17 @@ MODELS_DATA = {
             LANG_VI["model6_param_t0"], LANG_VI["model6_param_t1"],
         ],
         "param_keys_en": [
-            # ... (giữ nguyên)
+            LANG_EN["model6_param_yA0"], LANG_EN["model6_param_yB0"], LANG_EN["model6_param_yC0"],
+            LANG_EN["model6_param_k1"], LANG_EN["model6_param_k2"],
+            LANG_EN["model6_param_t0"], LANG_EN["model6_param_t1"],
         ],
         "internal_param_keys": ["y_A0", "y_B0", "y_C0", "k1", "k2", "t0", "t1"],
-        "ode_func": get_model6_ode,
-        "exact_func": lambda k1, k2, y_A0, y_B0, y_C0, t0, t1: (
-            lambda t_arr: _model6_exact_solution(k1, k2, y_A0, y_B0, y_C0, t0, t_arr)
-        ),
-        # Thêm thông tin về các thành phần (bạn đã có sẵn, rất tốt!)
+        
+        # Sửa lại cho đúng, gọi các hàm wrapper đã thêm ở Bước 1
+        "ode_func": lambda k1, k2: _model6_get_ode_func(k1, k2),
+        "exact_func": lambda k1, k2, y_A0, y_B0, y_C0, t0: _model6_get_exact_func(k1, k2, y_A0, y_B0, y_C0, t0),
+        
+        # Thêm thông tin về các thành phần
         "components": {
             "A": "model6_component_A",
             "B": "model6_component_B",
@@ -1932,31 +1932,220 @@ def _model5_ode_system(t, x, y, u, v):
     dydt = -v * y / r - u
     return np.array([dxdt, dydt])
 
-def _model6_exact_solution(k1, k2, y_A0, y_B0, y_C0, t0, t_arr):
-    """
-    Tính nghiệm giải tích cho hệ A -> B -> C.
-    Trả về một tuple: (y_A_values, y_B_values, y_C_values)
-    """
-    t_rel = np.asarray(t_arr) - t0
-    total_initial_concentration = y_A0 + y_B0 + y_C0
+def _model6_get_ode_func(k1, k2):
+    """Tạo hàm f(t, ya, yb, yc) cho Model 6."""
+    def f(t, ya, yb, yc):
+        da = -k1 * ya
+        db = k1 * ya - k2 * yb
+        dc = k2 * yb
+        return da, db, dc
+    return f
 
-    # Tính nồng độ A
-    yA_vals = y_A0 * np.exp(-k1 * t_rel)
+def _model6_get_exact_func(k1, k2, yA0, yB0, yC0, t0):
+    """Tạo hàm trả về nghiệm giải tích (a(t), b(t), c(t)) cho Model 6."""
+    def exact_solution_at_t(t_arr):
+        t = np.asarray(t_arr) - t0
+        
+        yA = yA0 * np.exp(-k1 * t)
+        
+        if abs(k1 - k2) < 1e-15:
+            yB = (k1 * yA0 * t + yB0) * np.exp(-k1 * t)
+        else:
+            term1 = (k1 * yA0) / (k2 - k1)
+            term2 = np.exp(-k1 * t) - np.exp(-k2 * t)
+            yB = term1 * term2 + yB0 * np.exp(-k2 * t)
 
-    # Tính nồng độ B
-    yB_vals = np.zeros_like(t_rel)
-    if abs(k1 - k2) < 1e-9: # Trường hợp k1 = k2
-        yB_vals = (k1 * y_A0 * t_rel + y_B0) * np.exp(-k1 * t_rel)
-    else: # Trường hợp k1 != k2
-        term1 = (k1 * y_A0) / (k2 - k1)
-        term2 = np.exp(-k1 * t_rel) - np.exp(-k2 * t_rel)
-        term3 = y_B0 * np.exp(-k2 * t_rel)
-        yB_vals = term1 * term2 + term3
+        total_initial = yA0 + yB0 + yC0
+        yC = total_initial - yA - yB
+        
+        return yA, yB, yC
+    return exact_solution_at_t
 
-    # Tính nồng độ C bằng định luật bảo toàn khối lượng
-    yC_vals = total_initial_concentration - yA_vals - yB_vals
-    
-    return yA_vals, yB_vals, yC_vals
+def _model6_rk2(f, exact_sol_func, t, y_A0, y_B0, y_C0):
+    h = t[1] - t[0]; n = len(t)
+    a, b, c = np.zeros(n), np.zeros(n), np.zeros(n)
+    a[0], b[0], c[0] = y_A0, y_B0, y_C0
+    for i in range(n - 1):
+        da1, db1, dc1 = f(t[i], a[i], b[i], c[i])
+        da2, db2, dc2 = f(t[i] + h, a[i] + h * da1, b[i] + h * db1, c[i] + h * dc1)
+        a[i + 1] = a[i] + h / 2 * (da1 + da2)
+        b[i + 1] = b[i] + h / 2 * (db1 + db2)
+        c[i + 1] = c[i] + h / 2 * (dc1 + dc2)
+    return a, b, c
+
+def _model6_rk3(f, exact_sol_func, t, y_A0, y_B0, y_C0):
+    h = t[1] - t[0]; n = len(t)
+    a, b, c = np.zeros(n), np.zeros(n), np.zeros(n)
+    a[0], b[0], c[0] = y_A0, y_B0, y_C0
+    for i in range(n - 1):
+        da1, db1, dc1 = f(t[i], a[i], b[i], c[i])
+        da2, db2, dc2 = f(t[i] + h / 2, a[i] + h / 2 * da1, b[i] + h / 2 * db1, c[i] + h / 2 * dc1)
+        da3, db3, dc3 = f(t[i] + h, a[i] + h * (-da1 + 2 * da2), b[i] + h * (-db1 + 2 * db2), c[i] + h * (-dc1 + 2 * dc2))
+        a[i + 1] = a[i] + h / 6 * (da1 + 4 * da2 + da3)
+        b[i + 1] = b[i] + h / 6 * (db1 + 4 * db2 + db3)
+        c[i + 1] = c[i] + h / 6 * (dc1 + 4 * dc2 + dc3)
+    return a, b, c
+
+def _model6_rk4(f, exact_sol_func, t, y_A0, y_B0, y_C0):
+    h = t[1] - t[0]; n = len(t)
+    a, b, c = np.zeros(n), np.zeros(n), np.zeros(n)
+    a[0], b[0], c[0] = y_A0, y_B0, y_C0
+    for i in range(n - 1):
+        da1, db1, dc1 = f(t[i], a[i], b[i], c[i])
+        da2, db2, dc2 = f(t[i] + h / 2, a[i] + h / 2 * da1, b[i] + h / 2 * db1, c[i] + h / 2 * dc1)
+        da3, db3, dc3 = f(t[i] + h / 2, a[i] + h / 2 * da2, b[i] + h / 2 * db2, c[i] + h / 2 * dc2)
+        da4, db4, dc4 = f(t[i] + h, a[i] + h * da3, b[i] + h * db3, c[i] + h * dc3)
+        a[i + 1] = a[i] + h / 6 * (da1 + 2 * da2 + 2 * da3 + da4)
+        b[i + 1] = b[i] + h / 6 * (db1 + 2 * db2 + 2 * db3 + db4)
+        c[i + 1] = c[i] + h / 6 * (dc1 + 2 * dc2 + 2 * dc3 + dc4)
+    return a, b, c
+
+def _model6_ab2(f, exact_sol_func, t, y_A0, y_B0, y_C0):
+    h = t[1] - t[0]; n = len(t)
+    a, b, c = np.zeros(n), np.zeros(n), np.zeros(n)
+    a[0], b[0], c[0] = y_A0, y_B0, y_C0
+    if n > 1:
+        exact_a, exact_b, exact_c = exact_sol_func(t[1])
+        a[1], b[1], c[1] = exact_a, exact_b, exact_c
+    for i in range(1, n - 1):
+        da1, db1, dc1 = f(t[i], a[i], b[i], c[i])
+        da0, db0, dc0 = f(t[i - 1], a[i - 1], b[i - 1], c[i - 1])
+        a[i + 1] = a[i] + h / 2 * (3 * da1 - da0)
+        b[i + 1] = b[i] + h / 2 * (3 * db1 - db0)
+        c[i + 1] = c[i] + h / 2 * (3 * dc1 - dc0)
+    return a, b, c
+
+def _model6_ab3(f, exact_sol_func, t, y_A0, y_B0, y_C0):
+    h = t[1] - t[0]; n = len(t)
+    a, b, c = np.zeros(n), np.zeros(n), np.zeros(n)
+    a[0], b[0], c[0] = y_A0, y_B0, y_C0
+    if n > 2:
+        exact_a, exact_b, exact_c = exact_sol_func(t[1:3])
+        a[1:3], b[1:3], c[1:3] = exact_a, exact_b, exact_c
+    elif n > 1:
+        exact_a, exact_b, exact_c = exact_sol_func(t[1])
+        a[1], b[1], c[1] = exact_a, exact_b, exact_c
+    for i in range(2, n - 1):
+        da2, db2, dc2 = f(t[i], a[i], b[i], c[i])
+        da1, db1, dc1 = f(t[i - 1], a[i - 1], b[i - 1], c[i - 1])
+        da0, db0, dc0 = f(t[i - 2], a[i - 2], b[i - 2], c[i - 2])
+        a[i + 1] = a[i] + h / 12 * (23 * da2 - 16 * da1 + 5 * da0)
+        b[i + 1] = b[i] + h / 12 * (23 * db2 - 16 * db1 + 5 * db0)
+        c[i + 1] = c[i] + h / 12 * (23 * dc2 - 16 * dc1 + 5 * dc0)
+    return a, b, c
+
+def _model6_ab4(f, exact_sol_func, t, y_A0, y_B0, y_C0):
+    h = t[1] - t[0]; n = len(t)
+    a, b, c = np.zeros(n), np.zeros(n), np.zeros(n)
+    a[0], b[0], c[0] = y_A0, y_B0, y_C0
+    if n > 3:
+        exact_a, exact_b, exact_c = exact_sol_func(t[1:4])
+        a[1:4], b[1:4], c[1:4] = exact_a, exact_b, exact_c
+    elif n > 1:
+        num_pts = n - 1
+        exact_a, exact_b, exact_c = exact_sol_func(t[1:1+num_pts])
+        a[1:1+num_pts], b[1:1+num_pts], c[1:1+num_pts] = exact_a, exact_b, exact_c
+    for i in range(3, n - 1):
+        da3, db3, dc3 = f(t[i], a[i], b[i], c[i])
+        da2, db2, dc2 = f(t[i - 1], a[i - 1], b[i - 1], c[i - 1])
+        da1, db1, dc1 = f(t[i - 2], a[i - 2], b[i - 2], c[i - 2])
+        da0, db0, dc0 = f(t[i - 3], a[i - 3], b[i - 3], c[i - 3])
+        a[i + 1] = a[i] + h / 24 * (55 * da3 - 59 * da2 + 37 * da1 - 9 * da0)
+        b[i + 1] = b[i] + h / 24 * (55 * db3 - 59 * db2 + 37 * db1 - 9 * db0)
+        c[i + 1] = c[i] + h / 24 * (55 * dc3 - 59 * dc2 + 37 * dc1 - 9 * dc0)
+    return a, b, c
+
+def _model6_ab5(f, exact_sol_func, t, y_A0, y_B0, y_C0):
+    h = t[1] - t[0]; n = len(t)
+    a, b, c = np.zeros(n), np.zeros(n), np.zeros(n)
+    a[0], b[0], c[0] = y_A0, y_B0, y_C0
+    if n > 4:
+        exact_a, exact_b, exact_c = exact_sol_func(t[1:5])
+        a[1:5], b[1:5], c[1:5] = exact_a, exact_b, exact_c
+    elif n > 1:
+        num_pts = n - 1
+        exact_a, exact_b, exact_c = exact_sol_func(t[1:1+num_pts])
+        a[1:1+num_pts], b[1:1+num_pts], c[1:1+num_pts] = exact_a, exact_b, exact_c
+    for i in range(4, n - 1):
+        da4, db4, dc4 = f(t[i], a[i], b[i], c[i])
+        da3, db3, dc3 = f(t[i - 1], a[i - 1], b[i - 1], c[i - 1])
+        da2, db2, dc2 = f(t[i - 2], a[i - 2], b[i - 2], c[i - 2])
+        da1, db1, dc1 = f(t[i - 3], a[i - 3], b[i - 3], c[i - 3])
+        da0, db0, dc0 = f(t[i - 4], a[i - 4], b[i - 4], c[i - 4])
+        a[i + 1] = a[i] + h / 720 * (1901 * da4 - 2774 * da3 + 2616 * da2 - 1274 * da1 + 251 * da0)
+        b[i + 1] = b[i] + h / 720 * (1901 * db4 - 2774 * db3 + 2616 * db2 - 1274 * db1 + 251 * db0)
+        c[i + 1] = c[i] + h / 720 * (1901 * dc4 - 2774 * dc3 + 2616 * dc2 - 1274 * dc1 + 251 * dc0)
+    return a, b, c
+
+def _model6_am2(f, exact_sol_func, t, y_A0, y_B0, y_C0):
+    h = t[1] - t[0]; n = len(t)
+    a, b, c = np.zeros(n), np.zeros(n), np.zeros(n)
+    a[0], b[0], c[0] = y_A0, y_B0, y_C0
+    if n > 1:
+        exact_a, exact_b, exact_c = exact_sol_func(t[1])
+        a[1], b[1], c[1] = exact_a, exact_b, exact_c
+    else: return a,b,c
+    for i in range(1, n - 1):
+        da1, db1, dc1 = f(t[i], a[i], b[i], c[i])
+        da0, db0, dc0 = f(t[i - 1], a[i - 1], b[i - 1], c[i - 1])
+        a_pred = a[i] + h / 2 * (3 * da1 - da0)
+        b_pred = b[i] + h / 2 * (3 * db1 - db0)
+        c_pred = c[i] + h / 2 * (3 * dc1 - dc0)
+        da_pred, db_pred, dc_pred = f(t[i + 1], a_pred, b_pred, c_pred)
+        a[i + 1] = a[i] + h / 12 * (5 * da_pred + 8 * da1 - da0)
+        b[i + 1] = b[i] + h / 12 * (5 * db_pred + 8 * db1 - db0)
+        c[i + 1] = c[i] + h / 12 * (5 * dc_pred + 8 * dc1 - dc0)
+    return a, b, c
+
+def _model6_am3(f, exact_sol_func, t, y_A0, y_B0, y_C0):
+    h = t[1] - t[0]; n = len(t)
+    a, b, c = np.zeros(n), np.zeros(n), np.zeros(n)
+    a[0], b[0], c[0] = y_A0, y_B0, y_C0
+    if n > 2:
+        exact_a, exact_b, exact_c = exact_sol_func(t[1:3])
+        a[1:3], b[1:3], c[1:3] = exact_a, exact_b, exact_c
+    elif n > 1:
+        exact_a, exact_b, exact_c = exact_sol_func(t[1])
+        a[1], b[1], c[1] = exact_a, exact_b, exact_c
+    else: return a,b,c
+    for i in range(2, n - 1):
+        da2, db2, dc2 = f(t[i], a[i], b[i], c[i])
+        da1, db1, dc1 = f(t[i - 1], a[i - 1], b[i - 1], c[i - 1])
+        da0, db0, dc0 = f(t[i - 2], a[i - 2], b[i - 2], c[i - 2])
+        a_pred = a[i] + h / 12 * (23 * da2 - 16 * da1 + 5 * da0)
+        b_pred = b[i] + h / 12 * (23 * db2 - 16 * db1 + 5 * db0)
+        c_pred = c[i] + h / 12 * (23 * dc2 - 16 * dc1 + 5 * dc0)
+        da_pred, db_pred, dc_pred = f(t[i + 1], a_pred, b_pred, c_pred)
+        a[i + 1] = a[i] + h / 24 * (9 * da_pred + 19 * da2 - 5 * da1 + da0)
+        b[i + 1] = b[i] + h / 24 * (9 * db_pred + 19 * db2 - 5 * db1 + db0)
+        c[i + 1] = c[i] + h / 24 * (9 * dc_pred + 19 * dc2 - 5 * dc1 + dc0)
+    return a, b, c
+
+def _model6_am4(f, exact_sol_func, t, y_A0, y_B0, y_C0):
+    h = t[1] - t[0]; n = len(t)
+    a, b, c = np.zeros(n), np.zeros(n), np.zeros(n)
+    a[0], b[0], c[0] = y_A0, y_B0, y_C0
+    if n > 3:
+        exact_a, exact_b, exact_c = exact_sol_func(t[1:4])
+        a[1:4], b[1:4], c[1:4] = exact_a, exact_b, exact_c
+    elif n > 1:
+        num_pts = n - 1
+        exact_a, exact_b, exact_c = exact_sol_func(t[1:1+num_pts])
+        a[1:1+num_pts], b[1:1+num_pts], c[1:1+num_pts] = exact_a, exact_b, exact_c
+    else: return a,b,c
+    for i in range(3, n - 1):
+        da3, db3, dc3 = f(t[i], a[i], b[i], c[i])
+        da2, db2, dc2 = f(t[i - 1], a[i - 1], b[i - 1], c[i - 1])
+        da1, db1, dc1 = f(t[i - 2], a[i - 2], b[i - 2], c[i - 2])
+        da0, db0, dc0 = f(t[i - 3], a[i - 3], b[i - 3], c[i - 3])
+        a_pred = a[i] + h / 24 * (55 * da3 - 59 * da2 + 37 * da1 - 9 * da0)
+        b_pred = b[i] + h / 24 * (55 * db3 - 59 * db2 + 37 * db1 - 9 * db0)
+        c_pred = c[i] + h / 24 * (55 * dc3 - 59 * dc2 + 37 * dc1 - 9 * dc0)
+        da_pred, db_pred, dc_pred = f(t[i + 1], a_pred, b_pred, c_pred)
+        a[i + 1] = a[i] + h / 720 * (251 * da_pred + 646 * da3 - 264 * da2 + 106 * da1 - 19 * da0)
+        b[i + 1] = b[i] + h / 720 * (251 * db_pred + 646 * db3 - 264 * db2 + 106 * db1 - 19 * db0)
+        c[i + 1] = c[i] + h / 720 * (251 * dc_pred + 646 * dc3 - 264 * dc2 + 106 * dc1 - 19 * dc0)
+    return a, b, c
 # --- 4. CẤU TRÚC CHÍNH CỦA ỨNG DỤNG STREAMLIT ---
 
 # Khởi tạo st.session_state để lưu trạng thái
@@ -2358,13 +2547,18 @@ def _prepare_simulation_functions(model_data, input_params, selected_method_shor
 def _perform_single_simulation(model_data, ode_func, exact_sol_func, y0, t_start, t_end, method_short, steps_int, h_target, selected_component='x'):
     """
     Thực hiện một lần mô phỏng đầy đủ, bao gồm cả tính toán bậc hội tụ.
-    Đây là phiên bản Streamlit của hàm cùng tên trong code gốc.
+    Phiên bản cập nhật để xử lý Model 6.
     """
     is_system = model_data.get("is_system", False)
     uses_rk5_reference = model_data.get("uses_rk5_reference", False)
     model_id = model_data.get("id")
 
     # --- Chọn hàm solver ---
+    # THÊM BỘ SOLVER CHO MODEL 6
+    method_map_model6 = {
+        "Bashforth": {2: _model6_ab2, 3: _model6_ab3, 4: _model6_ab4, 5: _model6_ab5},
+        "Moulton": {2: _model6_am2, 3: _model6_am3, 4: _model6_am4}
+    }
     method_map_single = {"Bashforth": {2: AB2, 3: AB3, 4: AB4, 5: AB5}, "Moulton": {2: AM2, 3: AM3, 4: AM4}}
     method_map_system = {"Bashforth": {2: AB2_system, 3: AB3_system, 4: AB4_system, 5: AB5_system}, "Moulton": {2: AM2_system, 3: AM3_system, 4: AM4_system}}
     method_map_model5 = {
@@ -2373,7 +2567,8 @@ def _perform_single_simulation(model_data, ode_func, exact_sol_func, y0, t_start
     }
     
     current_map = method_map_single
-    if model_id == "model5": current_map = method_map_model5
+    if model_id == "model6": current_map = method_map_model6
+    elif model_id == "model5": current_map = method_map_model5
     elif is_system: current_map = method_map_system
     
     method_func = current_map.get(method_short, {}).get(steps_int)
@@ -2381,7 +2576,7 @@ def _perform_single_simulation(model_data, ode_func, exact_sol_func, y0, t_start
         st.error(f"Solver không tồn tại cho {method_short} {steps_int} bước.")
         return None
 
-    # --- Logic tính toán cho đồ thị và bậc hội tụ (giữ nguyên từ code gốc) ---
+    # --- Logic tính toán cho đồ thị và bậc hội tụ ---
     interval_length = t_end - t_start
     if interval_length <= 1e-9: return None
     min_n_required = max(steps_int, 2)
@@ -2389,173 +2584,156 @@ def _perform_single_simulation(model_data, ode_func, exact_sol_func, y0, t_start
     if uses_rk5_reference: n_plot = max(n_plot, 50)
     h_actual_plot = interval_length / n_plot
     t_plot = np.linspace(t_start, t_end, n_plot + 1)
+    
     y_approx_plot_u1, y_exact_plot_u1 = None, None
     y_approx_plot_all_components, y_exact_plot_all_components = None, None
     
-    rk5_ref_for_screen2 = RK5_original_system_M5 if model_id == "model5" else None
-
-    if model_id == "model5" and uses_rk5_reference and rk5_ref_for_screen2:
-        try:
-            rk5_ref_x_plot, rk5_ref_y_plot = rk5_ref_for_screen2(ode_func, t_plot, y0[0], y0[1])
-            y_exact_plot_all_components = [np.asarray(rk5_ref_x_plot), np.asarray(rk5_ref_y_plot)]
-            y_exact_plot_u1 = y_exact_plot_all_components[0 if selected_component == 'x' else 1]
-        except Exception as e_rk5_plot:
-            print(f"    Error calculating RK5 reference for Model 5 main plot: {e_rk5_plot}")
-            return None
-    elif exact_sol_func and len(t_plot) > 0:
-        if is_system:
-            exact_tuple = exact_sol_func(t_plot)
-            if exact_tuple is not None and len(exact_tuple) == 2:
-                y_exact_plot_all_components = [np.asarray(exact_tuple[0]), np.asarray(exact_tuple[1])]
-                y_exact_plot_u1 = y_exact_plot_all_components[0]
-        else:
-            y_exact_plot_u1 = np.asarray(exact_sol_func(t_plot))
+    # THÊM NHÁNH XỬ LÝ RIÊNG CHO MODEL 6
     try:
-        if is_system:
+        if model_id == "model6":
+            # Gọi solver đặc biệt với 3 điều kiện đầu
+            y_approx_plot_all_components = list(method_func(ode_func, exact_sol_func, t_plot, y0[0], y0[1], y0[2]))
+            if exact_sol_func:
+                y_exact_plot_all_components = list(exact_sol_func(t_plot))
+            
+            # Chọn thành phần để vẽ dựa trên selected_component
+            comp_map_idx = {'A': 0, 'B': 1, 'C': 2}
+            selected_idx = comp_map_idx.get(selected_component, 0)
+            y_approx_plot_u1 = y_approx_plot_all_components[selected_idx]
+            if y_exact_plot_all_components:
+                y_exact_plot_u1 = y_exact_plot_all_components[selected_idx]
+
+        elif is_system:
             u1_plot, u2_plot = method_func(ode_func, t_plot, y0[0], y0[1])
             y_approx_plot_all_components = [np.asarray(u1_plot), np.asarray(u2_plot)]
             y_approx_plot_u1 = y_approx_plot_all_components[0 if selected_component == 'x' else 1]
-        else:
+
+            if uses_rk5_reference:
+                rk5_ref_for_screen2 = RK5_original_system_M5
+                rk5_ref_x_plot, rk5_ref_y_plot = rk5_ref_for_screen2(ode_func, t_plot, y0[0], y0[1])
+                y_exact_plot_all_components = [np.asarray(rk5_ref_x_plot), np.asarray(rk5_ref_y_plot)]
+                y_exact_plot_u1 = y_exact_plot_all_components[0 if selected_component == 'x' else 1]
+            elif exact_sol_func:
+                exact_tuple = exact_sol_func(t_plot)
+                if exact_tuple is not None and len(exact_tuple) >= 2:
+                    y_exact_plot_all_components = [np.asarray(exact_tuple[0]), np.asarray(exact_tuple[1])]
+                    y_exact_plot_u1 = y_exact_plot_all_components[0]
+        else: # Phương trình đơn
             y_plot = method_func(ode_func, t_plot, y0)
             y_approx_plot_u1 = np.asarray(y_plot)
+            if exact_sol_func:
+                y_exact_plot_u1 = np.asarray(exact_sol_func(t_plot))
+        
+        # Khớp độ dài mảng (quan trọng)
         if y_approx_plot_u1 is not None:
             min_len_plot = len(y_approx_plot_u1)
             if y_exact_plot_u1 is not None: min_len_plot = min(min_len_plot, len(y_exact_plot_u1))
             min_len_plot = min(min_len_plot, len(t_plot))
             t_plot = t_plot[:min_len_plot]
-            if y_approx_plot_all_components:
-                y_approx_plot_all_components[0] = y_approx_plot_all_components[0][:min_len_plot]
-                y_approx_plot_all_components[1] = y_approx_plot_all_components[1][:min_len_plot]
-                y_approx_plot_u1 = y_approx_plot_all_components[0 if selected_component == 'x' else 1]
-            elif y_approx_plot_u1 is not None: y_approx_plot_u1 = y_approx_plot_u1[:min_len_plot]
-            if y_exact_plot_all_components:
-                y_exact_plot_all_components[0] = y_exact_plot_all_components[0][:min_len_plot]
-                y_exact_plot_all_components[1] = y_exact_plot_all_components[1][:min_len_plot]
-                y_exact_plot_u1 = y_exact_plot_all_components[0 if selected_component == 'x' else 1]
-            elif y_exact_plot_u1 is not None: y_exact_plot_u1 = y_exact_plot_u1[:min_len_plot]
+            y_approx_plot_u1 = y_approx_plot_u1[:min_len_plot]
+            if y_exact_plot_u1 is not None: y_exact_plot_u1 = y_exact_plot_u1[:min_len_plot]
+            if y_approx_plot_all_components: y_approx_plot_all_components = [comp[:min_len_plot] for comp in y_approx_plot_all_components]
+            if y_exact_plot_all_components: y_exact_plot_all_components = [comp[:min_len_plot] for comp in y_exact_plot_all_components]
+
     except Exception as e_plot_approx:
-        print(f"    Error calculating APPROXIMATE solution for main plot (N={n_plot}) using {method_func.__name__}: {e_plot_approx}")
-        t_plot = np.array([])
-        y_approx_plot_u1, y_exact_plot_u1 = None, None
-        y_approx_plot_all_components, y_exact_plot_all_components = None, None
-    errors_convergence = []
-    h_values_for_loglog_list = []
-    n_values_plotted = []
+        print(f"Error calculating APPROXIMATE solution for main plot: {e_plot_approx}")
+        return None
+
+    # --- Vòng lặp tính bậc hội tụ ---
+    errors_convergence, h_values_for_loglog_list, n_values_plotted = [], [], []
     log_h_conv, log_err_conv = [], []
     slope = np.nan
-    interval_n_base = max(1, int(np.ceil(interval_length)))
-    n_start_conv, n_end_conv = 0, 0
-    num_points_convergence = 10
-    if model_id == "model1": n_start_conv, n_end_conv = max(5, 2*interval_n_base), max(20, 10*interval_n_base)
-    elif model_id == "model2": n_start_conv, n_end_conv = max(5,interval_n_base), max(10,interval_n_base*2)
-    elif model_id == "model3": n_start_conv = interval_n_base; n_end_conv = 3 * interval_n_base
-    elif model_id == "model4": n_start_conv, n_end_conv = max(10, 10*interval_n_base), max(30, 30*interval_n_base)
-    elif model_id == "model5":
-        n_start_conv = 2000
-        n_end_conv = 10000
-        num_points_convergence = 8
-    else: n_start_conv, n_end_conv = 10, 100
-    n_values_for_conv_loop = np.array([], dtype=int)
-    if model_id in ["model2", "model3"]:
-        if n_start_conv <= 0: n_start_conv = 1
-        if n_end_conv <= n_start_conv: n_end_conv = n_start_conv + max(1, num_points_convergence -1)
-        n_values_for_conv_loop = np.arange(n_start_conv, n_end_conv +1 , 1, dtype=int)
-    elif model_id == "model5":
-        if n_start_conv > n_end_conv : n_start_conv, n_end_conv = n_end_conv, n_start_conv
-        if n_start_conv <= 0: n_start_conv = max(1, min_n_required)
-        if n_end_conv <= n_start_conv: n_end_conv = n_start_conv + num_points_convergence
-        n_values_for_conv_loop = np.linspace(n_start_conv, n_end_conv, num_points_convergence, dtype=int)
+    
+    # Logic tạo N values (giữ nguyên)
+    # ...
+    if model_id == "model6": # Thêm điều kiện cho Model 6
+        n_values_for_conv_loop = np.arange(5, 16, 1, dtype=int)
     else:
+        # ... (logic cũ cho các model khác)
+        interval_n_base = max(1, int(np.ceil(interval_length)))
+        if model_id == "model1": n_start_conv, n_end_conv = max(5, 2*interval_n_base), max(20, 10*interval_n_base)
+        elif model_id == "model2": n_start_conv, n_end_conv = max(5,interval_n_base), max(10,interval_n_base*2)
+        elif model_id == "model3": n_start_conv = interval_n_base; n_end_conv = 3 * interval_n_base
+        elif model_id == "model4": n_start_conv, n_end_conv = max(10, 10*interval_n_base), max(30, 30*interval_n_base)
+        elif model_id == "model5": n_start_conv, n_end_conv = 2000, 10000
+        else: n_start_conv, n_end_conv = 10, 100
+        
         if n_start_conv > n_end_conv: n_start_conv, n_end_conv = n_end_conv, n_start_conv
-        if n_start_conv <= 0 and n_end_conv > 0: n_start_conv = 1
-        if n_start_conv == n_end_conv and n_start_conv <= 0: return None
-        if n_end_conv >= n_start_conv > 0:
-            target_points_conv = 20
-            range_n_conv = n_end_conv - n_start_conv
-            step_n_conv = 1
-            if range_n_conv > 0 and target_points_conv > 0:
-                 step_n_conv = max(1, int(np.ceil(range_n_conv / target_points_conv)))
-            n_values_for_conv_loop = np.arange(n_start_conv, n_end_conv + 1, step_n_conv, dtype=int)
-    if len(n_values_for_conv_loop) == 0:
-        if n_start_conv > 0: n_values_for_conv_loop = np.array([n_start_conv],dtype=int)
-        else: print("Error: n_values_for_conv_loop is empty after generation."); return None
+        if n_start_conv <= 0: n_start_conv = max(1, min_n_required)
+        if n_end_conv <= n_start_conv: n_end_conv = n_start_conv + 9
+        
+        num_points_convergence = 10 if model_id != "model5" else 8
+        n_values_for_conv_loop = np.linspace(n_start_conv, n_end_conv, num_points_convergence, dtype=int)
+
+
     n_values_filtered_conv = np.unique(n_values_for_conv_loop[n_values_for_conv_loop >= min_n_required])
     if len(n_values_filtered_conv) < 2:
-        print(f"    Warning: Not enough N values ({len(n_values_filtered_conv)}) for convergence plot after filtering >= {min_n_required}.")
+        print(f"Warning: Not enough N values for convergence plot.")
     else:
-        print(f"    Convergence loop N values (original, filtered): Range [{n_values_filtered_conv[0]}, {n_values_filtered_conv[-1]}], Points: {len(n_values_filtered_conv)}")
         for n_conv_original in n_values_filtered_conv:
+            # ... (logic nhân N_eff giữ nguyên)
             n_eff_conv_sim = n_conv_original
-            h_for_logplot_conv = 0.0
             if model_id == 'model2': n_eff_conv_sim = n_conv_original * 2
             elif model_id == 'model3': n_eff_conv_sim = n_conv_original * 10
             elif model_id == 'model4': n_eff_conv_sim = n_conv_original * 2
-            if n_eff_conv_sim > 0: h_for_logplot_conv = interval_length / n_eff_conv_sim
-            else: continue
+
+            if n_eff_conv_sim <= 0: continue
+            h_for_logplot_conv = interval_length / n_eff_conv_sim
             n_eff_conv_sim = max(n_eff_conv_sim, min_n_required)
             t_conv_loop = np.linspace(t_start, t_end, n_eff_conv_sim + 1)
             if len(t_conv_loop) < steps_int + 1: continue
+
             try:
-                if is_system:
-                    u1_approx_conv_loop, u2_approx_conv_loop = method_func(ode_func, t_conv_loop, y0[0], y0[1])
-                    y_approx_conv_u1_selected_loop = u1_approx_conv_loop if selected_component == 'x' else u2_approx_conv_loop
-                else:
-                    y_approx_conv_loop = method_func(ode_func, t_conv_loop, y0)
-                    y_approx_conv_u1_selected_loop = y_approx_conv_loop
-                y_exact_conv_u1_selected_loop = None
-                if model_id == "model5" and uses_rk5_reference and rk5_ref_for_screen2:
-                    rk5_ref_x_conv_loop, rk5_ref_y_conv_loop = rk5_ref_for_screen2(ode_func, t_conv_loop, y0[0], y0[1])
-                    y_exact_conv_u1_selected_loop = rk5_ref_x_conv_loop if selected_component == 'x' else rk5_ref_y_conv_loop
-                elif exact_sol_func and len(t_conv_loop) > 0:
-                    if is_system:
-                        exact_tuple_loop = exact_sol_func(t_conv_loop)
-                        if exact_tuple_loop is not None and len(exact_tuple_loop) == 2:
-                            y_exact_conv_u1_selected_loop = exact_tuple_loop[0]
-                    else:
+                y_approx_conv_u1_selected_loop, y_exact_conv_u1_selected_loop = None, None
+                
+                # THÊM NHÁNH XỬ LÝ RIÊNG CHO MODEL 6 TRONG VÒNG LẶP HỘI TỤ
+                if model_id == "model6":
+                    approx_all = list(method_func(ode_func, exact_sol_func, t_conv_loop, y0[0], y0[1], y0[2]))
+                    exact_all = list(exact_sol_func(t_conv_loop)) if exact_sol_func else [None]*3
+                    idx = {'A': 0, 'B': 1, 'C': 2}.get(selected_component, 0)
+                    y_approx_conv_u1_selected_loop = approx_all[idx]
+                    y_exact_conv_u1_selected_loop = exact_all[idx]
+                elif is_system:
+                    u1, u2 = method_func(ode_func, t_conv_loop, y0[0], y0[1])
+                    y_approx_conv_u1_selected_loop = u1 if selected_component == 'x' else u2
+                    
+                    if uses_rk5_reference:
+                        ex1, ex2 = RK5_original_system_M5(ode_func, t_conv_loop, y0[0], y0[1])
+                    elif exact_sol_func:
+                        ex1, ex2 = exact_sol_func(t_conv_loop)
+                    else: 
+                        ex1, ex2 = None, None
+                    y_exact_conv_u1_selected_loop = ex1 if selected_component == 'x' else ex2
+                else: # Phương trình đơn
+                    y_approx_conv_u1_selected_loop = method_func(ode_func, t_conv_loop, y0)
+                    if exact_sol_func:
                         y_exact_conv_u1_selected_loop = exact_sol_func(t_conv_loop)
+                
                 if y_approx_conv_u1_selected_loop is None or y_exact_conv_u1_selected_loop is None : continue
-                y_approx_conv_u1_selected_loop = np.asarray(y_approx_conv_u1_selected_loop)
-                y_exact_conv_u1_selected_loop = np.asarray(y_exact_conv_u1_selected_loop)
-                approx_len_conv = len(y_approx_conv_u1_selected_loop)
-                exact_len_conv = len(y_exact_conv_u1_selected_loop)
-                min_len_conv_loop = min(approx_len_conv, exact_len_conv)
-                if min_len_conv_loop < 2: continue
-                approx_conv = y_approx_conv_u1_selected_loop[:min_len_conv_loop]
-                exact_conv = y_exact_conv_u1_selected_loop[:min_len_conv_loop]
-                error_conv = np.linalg.norm(exact_conv - approx_conv, np.inf)
-                if np.isfinite(error_conv) and error_conv > 1e-16 and h_for_logplot_conv > 1e-16:
-                    errors_convergence.append(error_conv)
+                
+                approx_c, exact_c = np.asarray(y_approx_conv_u1_selected_loop), np.asarray(y_exact_conv_u1_selected_loop)
+                min_len_c = min(len(approx_c), len(exact_c))
+                if min_len_c < 2: continue
+                
+                error_c = np.linalg.norm(exact_c[:min_len_c] - approx_c[:min_len_c], np.inf)
+                if np.isfinite(error_c) and error_c > 1e-16 and h_for_logplot_conv > 1e-16:
+                    errors_convergence.append(error_c)
                     n_values_plotted.append(n_conv_original)
                     h_values_for_loglog_list.append(h_for_logplot_conv)
-                else:
-                    print(f"    Skipping error point for N_orig={n_conv_original}: error={error_conv}, h_for_logplot={h_for_logplot_conv}")
             except Exception as e_conv_loop:
-                 print(f"    Error during convergence step N_orig={n_conv_original}, N_eff={n_eff_conv_sim}: {e_conv_loop}")
-    valid_h_for_loglog = np.array(h_values_for_loglog_list)
-    if len(errors_convergence) >= 2 and len(valid_h_for_loglog) == len(errors_convergence):
-            try:
-                h_log_array = valid_h_for_loglog
-                err_log_array = np.array(errors_convergence)
-                valid_indices_log = np.where((h_log_array > 1e-16) & (err_log_array > 1e-16) & np.isfinite(h_log_array) & np.isfinite(err_log_array))[0]
-                if len(valid_indices_log) >= 2:
-                    log_h_conv = np.log(h_log_array[valid_indices_log])
-                    log_err_conv = np.log(err_log_array[valid_indices_log])
-                    if len(log_h_conv) >= 2:
-                        coeffs = np.polyfit(log_h_conv, log_err_conv, 1)
-                        slope = coeffs[0]
-                        print(f"    Convergence analysis: Found {len(log_h_conv)} valid log points. Est. order: {slope:.3f}")
-                    else:
-                        print(f"    Warning: Not enough finite log values for polyfit ({len(log_h_conv)} points).")
-                        slope = np.nan
-                else:
-                    print("    Warning: Less than 2 valid points after filtering for log calculation.")
-                    slope = np.nan
-            except Exception as fit_e:
-                print(f"    Error during polyfit: {fit_e}")
-                slope = np.nan
-    else:
-        print(f"    Warning: Not enough points for convergence analysis (errors: {len(errors_convergence)}, valid_h: {len(valid_h_for_loglog)}).")
-        slope = np.nan
+                 print(f"Error during convergence step N_orig={n_conv_original}: {e_conv_loop}")
+    
+    # ... (logic tính polyfit giữ nguyên)
+    if len(errors_convergence) >= 2:
+        try:
+            log_h_conv = np.log(np.array(h_values_for_loglog_list))
+            log_err_conv = np.log(np.array(errors_convergence))
+            if len(log_h_conv) >= 2:
+                coeffs = np.polyfit(log_h_conv, log_err_conv, 1)
+                slope = coeffs[0]
+        except Exception as fit_e:
+            print(f"Error during polyfit: {fit_e}")
+            slope = np.nan
 
     return {
         "t_plot": np.asarray(t_plot),
@@ -2563,7 +2741,7 @@ def _perform_single_simulation(model_data, ode_func, exact_sol_func, y0, t_start
         "approx_sol_plot": np.asarray(y_approx_plot_u1) if y_approx_plot_u1 is not None else None,
         "exact_sol_plot_all_components": y_exact_plot_all_components,
         "approx_sol_plot_all_components": y_approx_plot_all_components,
-        "h_values_for_loglog": valid_h_for_loglog,
+        "h_values_for_loglog": np.array(h_values_for_loglog_list),
         "errors_convergence": np.array(errors_convergence),
         "log_h_convergence": log_h_conv,
         "log_error_convergence": log_err_conv,
@@ -2652,7 +2830,19 @@ def show_simulation_page():
                     param_inputs[key] = st.number_input(label, value=default_values.get(key, 1.0), format="%.4f", key=f"param_{model_id}_{key}")
             
             selected_component = 'x'
-            if model_id == "model5":
+			if model_id == "model6":
+                comp_data_m6 = model_data.get("components", {})
+                comp_options_m6_display = [tr(v) for v in comp_data_m6.values()]
+                comp_options_m6_keys = list(comp_data_m6.keys())
+                
+                selected_comp_disp_m6 = st.radio(
+                    tr('model6_select_component'), 
+                    comp_options_m6_display, 
+                    horizontal=True, 
+                    key=f"comp_{model_id}"
+                )
+                selected_component = comp_options_m6_keys[comp_options_m6_display.index(selected_comp_disp_m6)]
+            elif model_id == "model5":
                 comp_options = {tr('model5_component_x'): 'x', tr('model5_component_y'): 'y'}
                 selected_comp_disp = st.radio(tr('model5_select_component'), list(comp_options.keys()), horizontal=True, key=f"comp_{model_id}")
                 selected_component = comp_options[selected_comp_disp]
