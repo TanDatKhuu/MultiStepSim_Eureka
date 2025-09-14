@@ -1846,7 +1846,7 @@ MODELS_DATA = {
         "equation_key": "model6_eq",
         "description_key": "model6_desc",
         "ode_label_key": "model6_ode_system_label",
-        "hide_exact_solution_display": False, # Hiển thị nghiệm giải tích cho Model 6
+        "hide_exact_solution_display": False,
         
         "param_keys_vi": [
             LANG_VI["model6_param_yA0"], LANG_VI["model6_param_yB0"], LANG_VI["model6_param_yC0"],
@@ -1858,13 +1858,14 @@ MODELS_DATA = {
             LANG_EN["model6_param_k1"], LANG_EN["model6_param_k2"],
             LANG_EN["model6_param_t0"], LANG_EN["model6_param_t1"],
         ],
-        "internal_param_keys": ["y_A0", "y_B0", "y_C0", "k1", "k2", "t0", "t1"],
+        # SỬA LỖI Ở DÒNG NÀY: Dùng ký tự đặc biệt t₀ và t₁
+        "internal_param_keys": ["y_A0", "y_B0", "y_C0", "k1", "k2", "t₀", "t₁"],
         
-        # Sửa lại cho đúng, gọi các hàm wrapper đã thêm ở Bước 1
         "ode_func": lambda k1, k2: _model6_get_ode_func(k1, k2),
-        "exact_func": lambda k1, k2, y_A0, y_B0, y_C0, t0: _model6_get_exact_func(k1, k2, y_A0, y_B0, y_C0, t0),
         
-        # Thêm thông tin về các thành phần
+        # SỬA LỖI Ở DÒNG NÀY: Dùng ký tự đặc biệt t₀
+        "exact_func": lambda k1, k2, y_A0, y_B0, y_C0, t₀: _model6_get_exact_func(k1, k2, y_A0, y_B0, y_C0, t₀),
+        
         "components": {
             "A": "model6_component_A",
             "B": "model6_component_B",
