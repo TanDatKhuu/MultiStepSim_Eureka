@@ -3642,7 +3642,7 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                     sampled_sim_data['time_points'] = original_t[indices]
                 if 'approx_sol_plot_all_components' in sampled_sim_data:
                     sampled_sim_data['approx_sol_plot_all_components'] = [comp[indices] for comp in original_all_components]
-	            if 'state_history' in sampled_sim_data:
+                if 'state_history' in sampled_sim_data:
                     sampled_sim_data['state_history'] = original_all_components[indices]
                 
                 sim_data = sampled_sim_data # Ghi đè sim_data bằng phiên bản đã lấy mẫu
