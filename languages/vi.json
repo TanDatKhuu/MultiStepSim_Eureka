@@ -100,6 +100,7 @@
     "screen2_method_group": "1. Chọn phương pháp chính",
     "screen2_method_ab": "Adams-Bashforth (AB)",
     "screen2_method_am": "Adams-Moulton (AM)",
+    "screen2_method_rk": "Runge-Kutta (RK)",
     "screen2_details_group_ab": "2. Chi tiết Adams-Bashforth",
     "screen2_details_group_am": "2. Chi tiết Adams-Moulton",
     "screen2_steps_label": "Số bước:",
