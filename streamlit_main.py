@@ -103,6 +103,14 @@ def render_navbar():
             on_change=on_lang_change
         )
     st.divider()
+MODEL_DEFAULTS = {
+    "model1": {"O0": 1091.0, "k": 0.073, "t0": 0.0, "t1": 10.0},
+    "model2": {"x0": 1.0, "t0": 0.0, "t1": 10.0},
+    "model3": {"n": 50.0, "t0": 0.0, "t1": 10.0},
+    "model4": {"m": 0.5, "l": 1.0, "a": 0.4, "s": 0.25, "G": 100.0, "Y0": 10.0, "dY0": 5.0, "t0": 0.0, "t1": 10.0},
+    "model5": {"x0": 5.0, "y0": 0.0, "u": 2.0, "v": 4.0, "t0": 0.0, "t1": 10.0},
+    "model6": {"y_A0": 1.0, "y_B0": 0.0, "y_C0": 0.0, "k1": 1.0, "k2": 2.0, "t0": 0.0, "t1": 1.0},
+}
 # --- 3. CÁC HÀM TÍNH TOÁN, SOLVERS, MODEL DATA (GIỮ NGUYÊN) ---
 # Dán toàn bộ các hàm từ `RK2` đến `_model5_ode_system` và cả dictionary `MODELS_DATA`
 # cũng như các class/hàm cho Model 3 (ABM) vào đây.
@@ -2812,24 +2820,24 @@ def show_simulation_page():
             param_labels_key = f"param_keys_{st.session_state.lang}"
             all_param_labels = model_data.get(param_labels_key, model_data.get("param_keys_vi", []))
             internal_keys = model_data.get("internal_param_keys", [])
-            default_values = {
-                't0': 0.0, 't1': 10.0, 'O0': 1.0, 'k': 0.5, 'x0': 1.0, 
-                'n': 10.0, 'm': 0.5, 'l': 0.2, 'a': 0.1, 's': 0.25, 
-                'G': 20.0, 'Y0': 100.0, 'dY0': 1.0, 'y0': 0.0, 
-                'u': 1.0, 'v': 2.0,
-                'y_A0': 1.0, 'y_B0': 0.0, 'y_C0': 0.0, 'k1': 1.0, 'k2': 0.5
-            }
+
+            # Lấy dictionary default của model hiện tại
+            current_defaults = MODEL_DEFAULTS.get(model_id, {})
 
             if model_id == "model4":
                 cols_m4 = st.columns(2)
                 for i, key in enumerate(internal_keys):
                     label = tr(f"model4_param_{key.replace('₀','0').replace('₁','1')}")
                     with cols_m4[i % 2]:
-                        param_inputs[key] = st.number_input(label, value=default_values.get(key, 0.0), format="%.4f", key=f"param_{model_id}_{key}")
+                        # Lấy giá trị default từ current_defaults
+                        default_val = current_defaults.get(key, 0.0)
+                        param_inputs[key] = st.number_input(label, value=default_val, format="%.4f", key=f"param_{model_id}_{key}")
             else:
                 for i, key in enumerate(internal_keys):
                     label = all_param_labels[i] if i < len(all_param_labels) else key
-                    param_inputs[key] = st.number_input(label, value=default_values.get(key, 1.0), format="%.4f", key=f"param_{model_id}_{key}")
+                    # Lấy giá trị default từ current_defaults
+                    default_val = current_defaults.get(key, 1.0)
+                    param_inputs[key] = st.number_input(label, value=default_val, format="%.4f", key=f"param_{model_id}_{key}")
             
             selected_component = 'x'
             if model_id == "model6":
