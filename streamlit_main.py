@@ -2800,14 +2800,12 @@ def show_simulation_page():
             _cleanup_and_go_to_model_selection()
         
         st.title(tr("sidebar_title"))
-        
-        with st.form(key='simulation_form'):
-            st.header(tr('screen2_method_group'))
+        st.header(tr('screen2_method_group'))
             select_ab = st.checkbox(tr('screen2_method_ab'), value=True, key='cb_ab')
             select_am = st.checkbox(tr('screen2_method_am'), value=False, key='cb_am')
             select_rk = st.checkbox(tr('screen2_method_rk'), value=False, key='cb_rk')
             st.divider()
-
+        with st.form(key='simulation_form'):
             # 1. Khu vực chi tiết cho Adams-Bashforth
             if select_ab:
                 st.subheader(tr('screen2_details_group_ab'))
