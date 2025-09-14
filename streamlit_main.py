@@ -3570,33 +3570,38 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                     if len(model2_cells) < target_n:
                         to_add = target_n - len(model2_cells)
                         for _ in range(to_add):
-                            # 1. CHỌN TẾ BÀO MẸ TỪ 20 TẾ BÀO MỚI NHẤT -> Tạo cụm đặc hơn
-                            parent_candidates = model2_cells[-20:] 
+                            # 1. Chọn tế bào mẹ từ 20 tế bào mới nhất (hoặc tất cả nếu ít hơn 20)
+                            parent_candidates = model2_cells[-20:]
                             parent = random.choice(parent_candidates)
                             
-                            # 2. Cố gắng tìm vị trí trống xung quanh tế bào mẹ
-                            for _ in range(20): # 20 lần thử
-                                angle = random.uniform(0, 2 * np.pi)
-                                # 3. Đặt tế bào con ngay sát cạnh tế bào mẹ (khoảng cách 1.0)
-                                new_x = parent.x + np.cos(angle) * 1.0 
-                                new_y = parent.y + np.sin(angle) * 1.0
-                                
-                                # 4. Kiểm tra chồng lấp với tất cả các tế bào khác
-                                if not any(np.hypot(new_x - c.x, new_y - c.y) < 1.0 for c in model2_cells):
-                                    model2_cells.append(Cell(new_x, new_y, parent.gen + 1))
-                                    break # Tìm được vị trí, thoát vòng lặp thử và sinh tế bào tiếp theo
+                            # 2. Tạo vị trí con mới ngay cạnh mẹ, không cần thử nhiều lần
+                            angle = random.uniform(0, 2 * np.pi)
+                            new_x = parent.x + np.cos(angle) * 1.0 
+                            new_y = parent.y + np.sin(angle) * 1.0
+                            
+                            # 3. LOẠI BỎ HOÀN TOÀN VIỆC KIỂM TRA VA CHẠM
+                            # Dòng code cũ bị xóa:
+                            # if not any(np.hypot(new_x - c.x, new_y - c.y) < 1.0 for c in model2_cells):
+                            #     model2_cells.append(Cell(new_x, new_y, parent.gen + 1))
+                            #     break
+                            
+                            # Thêm tế bào mới một cách vô điều kiện
+                            model2_cells.append(Cell(new_x, new_y, parent.gen + 1))
                     # === KẾT THÚC THAY ĐỔI LOGIC ===
                     
                     all_x = [c.x for c in model2_cells]; all_y = [c.y for c in model2_cells]
-                    for cell in model2_cells: ax.add_patch(MplCircle((cell.x, cell.y), radius=0.5, color='brown', alpha=0.7))
+                    # Thêm viền đen cho tế bào để giống PySide6
+                    for cell in model2_cells: 
+                        ax.add_patch(MplCircle((cell.x, cell.y), radius=0.5, color='#A52A2A', ec='black', lw=0.5, alpha=0.9))
+                    
                     if all_x:
                         max_coord = max(max(np.abs(all_x)), max(np.abs(all_y))) + 2
                         ax.set_xlim(-max_coord, max_coord); ax.set_ylim(-max_coord, max_coord)
                     ax.set_aspect('equal'); ax.axis('off')
-                    ax.legend([MplCircle((0,0), 0.1, color='brown')], [tr("screen3_legend_model2_cell")], loc='upper right')
+                    ax.legend([MplCircle((0,0), 0.1, color='#A52A2A', ec='black', lw=0.5)], [tr("screen3_legend_model2_cell")], loc='upper right')
                     ax.set_title(tr("screen3_model2_anim_plot_title") + f"\nTime: {t_data[frame_idx]:.2f}s | Cells: {len(model2_cells)}")
 
-                # --- MODEL 3: ABM DỊCH BỆNH ---
+                # --- CÁC MODEL KHÁC GIỮ NGUYÊN ---
                 elif model_id == 'model3':
                     ended_by_logic = abm_instance.step()
                     ax.set_xlim(0, abm_instance.room_dimension); ax.set_ylim(0, abm_instance.room_dimension)
@@ -3610,7 +3615,6 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                     ax.set_title(tr("screen3_abm_anim_plot_title") + f"\nStep: {stats['time_step']} | Infected: {stats['infected_count']}")
                     if ended_by_logic: break
 
-                # --- MODEL 5.1: CON THUYỀN ---
                 elif model_id == 'model5' and st.session_state.m5_scenario == 1:
                     t_data = sim_data.get('t_plot')
                     x_path, y_path = sim_data['approx_sol_plot_all_components']
@@ -3622,7 +3626,6 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                     ax.grid(True); ax.legend(); ax.set_aspect('equal')
                     ax.set_title(tr("screen3_model5_plot_title_sim1") + f"\nTime: {t_data[frame_idx]:.2f}s")
                 
-                # --- MODEL 5.2: TÀU KHU TRỤC ---
                 elif model_id == 'model5' and st.session_state.m5_scenario == 2:
                     t_points, state_hist = sim_data['time_points'], sim_data['state_history']
                     is_caught, catch_time = sim_data['caught'], sim_data['time_of_catch']
