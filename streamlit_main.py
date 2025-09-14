@@ -3475,16 +3475,14 @@ def run_and_store_model5_scenario2_results():
 	
 def create_animation_gif(lang_code, model_id, model_data, validated_params, speed_multiplier):
     # --- CÀI ĐẶT FONT VÀ HÀM DỊCH NGÔN NGỮ CỤC BỘ ---
-    # Highlight: Thiết lập font tiếng Việt cho matplotlib
     font_path = os.path.join(base_path, "fonts", "DejaVuSans.ttf")
     font_prop = None
     if os.path.exists(font_path):
         from matplotlib.font_manager import FontProperties
         font_prop = FontProperties(fname=font_path)
         plt.rcParams['font.family'] = font_prop.get_name()
-        plt.rcParams['axes.unicode_minus'] = False # Sửa lỗi hiển thị dấu trừ
+        plt.rcParams['axes.unicode_minus'] = False 
     
-    # Highlight: Tạo hàm dịch cục bộ để không phụ thuộc vào st.session_state
     translations = load_language_file(lang_code)
     def _tr(key):
         return translations.get(key, key)
@@ -3497,10 +3495,10 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
     gif_buf = io.BytesIO()
     with imageio.get_writer(gif_buf, mode='I', format='gif', duration=0.1 / speed_multiplier, loop=0) as writer:
         try:
-            fig, ax = plt.subplots(figsize=(8, 8), dpi=80) # Giảm DPI để frame nhẹ hơn
+            fig, ax = plt.subplots(figsize=(8, 8), dpi=80)
             final_stats = {}
 
-            # --- Lấy dữ liệu mô phỏng cần thiết ---
+            # --- Lấy dữ liệu mô phỏng cần thiết (LOGIC ĐÃ SỬA LỖI) ---
             sim_data = {}
             if model_id == 'model5' and st.session_state.m5_scenario == 2:
                 if 'm5s2_results' not in st.session_state:
@@ -3508,10 +3506,29 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                 sim_data = st.session_state.get('m5s2_results', {})
             else:
                 results = st.session_state.get('simulation_results', {})
-                highest_step_key = max(results.keys(), key=int) if results else None
-                sim_data = results.get(highest_step_key, {})
+                best_sim_data = None
+                if results:
+                    highest_step_found = -1
+                    best_method_key = None
+                    # Lặp qua các phương thức như "Bashforth", "Moulton"
+                    for method_key, step_results in results.items():
+                        if step_results: # Kiểm tra xem có kết quả nào cho phương thức này không
+                            # Tìm bậc/số bước cao nhất trong các kết quả của phương thức này
+                            current_max_step = max(step_results.keys())
+                            if current_max_step > highest_step_found:
+                                highest_step_found = current_max_step
+                                best_method_key = method_key
+                    
+                    # Nếu tìm thấy một lần chạy hợp lệ, lấy dữ liệu của nó
+                    if best_method_key is not None and highest_step_found != -1:
+                        best_sim_data = results[best_method_key][highest_step_found]
+                
+                sim_data = best_sim_data if best_sim_data is not None else {}
+            # === KẾT THÚC PHẦN SỬA LỖI LOGIC ===
 
-            if not sim_data: return None, {}
+            if not sim_data: 
+                print("Lỗi: Không tìm thấy dữ liệu mô phỏng để tạo GIF.")
+                return None, {}
 
             # --- Xác định số lượng frame tối đa ---
             num_frames = 0
@@ -3520,7 +3537,9 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
             elif model_id == 'model5' and st.session_state.m5_scenario == 1: num_frames = len(sim_data.get('t_plot', []))
             elif model_id == 'model5' and st.session_state.m5_scenario == 2: num_frames = len(sim_data.get('time_points', []))
             
-            if num_frames == 0: return None, {}
+            if num_frames == 0: 
+                print(f"Lỗi: num_frames = 0. Dữ liệu sim_data có thể bị rỗng. Keys: {sim_data.keys()}")
+                return None, {}
             
             # --- Khởi tạo đối tượng mô phỏng (nếu cần) ---
             abm_instance = None
@@ -3540,14 +3559,12 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
 
             # --- Vòng lặp tạo từng frame ---
             for frame_idx in range(num_frames):
-                # Cập nhật thanh tiến trình
                 progress_percent = (frame_idx + 1) / num_frames
                 progress_bar.progress(progress_percent)
                 progress_text.text(f"{tr('gif_generating_spinner')} ({frame_idx + 1}/{num_frames})")
 
                 ax.clear()
                 
-                # --- MODEL 2: TĂNG TRƯỞNG TẾ BÀO ---
                 if model_id == 'model2':
                     t_data, y_data = sim_data['t_plot'], sim_data['approx_sol_plot']
                     target_n = int(round(y_data[frame_idx]))
@@ -3571,7 +3588,6 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                     ax.legend([MplCircle((0,0), 0.1, color='brown')], [tr("screen3_legend_model2_cell")], loc='upper right')
                     ax.set_title(tr("screen3_model2_anim_plot_title") + f"\nTime: {t_data[frame_idx]:.2f}s | Cells: {len(model2_cells)}")
 
-                # --- MODEL 3: ABM DỊCH BỆNH ---
                 elif model_id == 'model3':
                     ended_by_logic = abm_instance.step()
                     ax.set_xlim(0, abm_instance.room_dimension); ax.set_ylim(0, abm_instance.room_dimension)
@@ -3585,7 +3601,6 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                     ax.set_title(tr("screen3_abm_anim_plot_title") + f"\nStep: {stats['time_step']} | Infected: {stats['infected_count']}")
                     if ended_by_logic: break
 
-                # --- MODEL 5.1: CON THUYỀN ---
                 elif model_id == 'model5' and st.session_state.m5_scenario == 1:
                     t_data = sim_data.get('t_plot')
                     x_path, y_path = sim_data['approx_sol_plot_all_components']
@@ -3597,7 +3612,6 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                     ax.grid(True); ax.legend(); ax.set_aspect('equal')
                     ax.set_title(tr("screen3_model5_plot_title_sim1") + f"\nTime: {t_data[frame_idx]:.2f}s")
                 
-                # --- MODEL 5.2: TÀU KHU TRỤC ---
                 elif model_id == 'model5' and st.session_state.m5_scenario == 2:
                     t_points, state_hist = sim_data['time_points'], sim_data['state_history']
                     is_caught, catch_time = sim_data['caught'], sim_data['time_of_catch']
@@ -3619,7 +3633,6 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                     if is_caught and t_points[frame_idx] >= catch_time:
                         break
                 
-                # --- Ghi frame vào GIF ---
                 fig.canvas.draw()
                 frame_buf = io.BytesIO()
                 fig.savefig(frame_buf, format='png', bbox_inches='tight')
@@ -3629,7 +3642,6 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
 
             plt.close(fig)
 
-            # --- Tạo thông tin cuối cùng (final_stats) ---
             if model_id == 'model2':
                 c_val = st.session_state.get('last_calculated_c', 'N/A')
                 final_stats = {
@@ -3680,10 +3692,7 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                 plt.close(fig)
             return None, {}
 
-    # Sau khi xong, xóa placeholder của thanh tiến trình
     progress_container.empty()
-
-    # Tạo GIF
     gif_buf.seek(0)
     return gif_buf.getvalue(), final_stats
 def show_dynamic_simulation_page():
@@ -3748,9 +3757,9 @@ def show_dynamic_simulation_page():
     header_cols = st.columns([1.5, 4, 1.5])
     with header_cols[0]:
         back_cols = st.columns(2)
-        if back_cols[0].button(f"ᐊ {tr('screen3_back_button')}", use_container_width=True, help=tr("screen3_dyn_back_tooltip"), disabled=is_processing):
+        if back_cols[0].button(f"ᐊ {tr('screen3_back_button')}", width='stretch', help=tr("screen3_dyn_back_tooltip"), disabled=is_processing):
             _cleanup_and_navigate('simulation')
-        if back_cols[1].button(f"ᐊᐊ {tr('screen3_double_back_button')}", use_container_width=True, disabled=is_processing):
+        if back_cols[1].button(f"ᐊᐊ {tr('screen3_double_back_button')}", width='stretch', disabled=is_processing):
             _cleanup_and_navigate('model_selection')
     header_cols[1].markdown(f"<h1 style='text-align: center; margin: 0;'>{tr('screen3_dyn_only_title')}</h1>", unsafe_allow_html=True)
     
@@ -3778,7 +3787,7 @@ def show_dynamic_simulation_page():
             st.session_state.speed_multiplier = speed_multiplier
 
             # Highlight: Sửa logic của nút bấm
-            if st.button(f"🚀 {tr('generate_and_show_button')}", use_container_width=True, type="primary", disabled=is_processing,key="regenerate_gif_btn"):
+            if st.button(f"🚀 {tr('generate_and_show_button')}", width='stretch', type="primary", disabled=is_processing,key="regenerate_gif_btn"):
                 # Chỉ đặt cờ, không rerun
                 st.session_state.generate_gif_request = True
                 if 'generated_gif' in st.session_state:
