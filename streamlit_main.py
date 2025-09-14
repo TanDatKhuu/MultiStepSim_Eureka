@@ -2464,15 +2464,18 @@ def _prepare_simulation_functions(model_data, input_params, selected_method_shor
         t_end = input_params['t1']
         y0 = None
         calculated_params = {} # Dictionary để lưu các giá trị tính toán được
-
-        if model_id == "model4":
+        if model_id == "model6":
+            if 'y_A0' not in input_params or 'y_B0' not in input_params or 'y_C0' not in input_params:
+                raise ValueError(tr("msg_missing_y0"))
+            y0 = [input_params['y_A0'], input_params['y_B0'], input_params['y_C0']]
+        elif model_id == "model4":
             if 'Y0' not in input_params or 'dY0' not in input_params: raise ValueError(tr("msg_missing_y0"))
             y0 = [input_params['Y0'], input_params['dY0']]
         elif model_id == "model5":
             if 'x0' not in input_params or 'y0' not in input_params: raise ValueError(tr("msg_missing_y0"))
             y0 = [input_params['x0'], input_params['y0']]
         else:
-            y0_key_map = {'model1': 'O₀', 'model2': 'x₀', 'model3': 'n'}
+            y0_key_map = {'model1': 'O0', 'model2': 'x0', 'model3': 'n'}
             y0_key = y0_key_map.get(model_id)
             if y0_key is None or y0_key not in input_params: raise ValueError(tr("msg_missing_y0"))
             y0 = input_params[y0_key]
