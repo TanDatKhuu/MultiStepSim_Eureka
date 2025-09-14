@@ -88,7 +88,7 @@
 	"model6_component_C": "Concentration C ($y_C$)",
 	"screen2_plot_exact_sol_label": "Exact Solution",
     "screen2_plot_ref_sol_label": "Reference Solution (RK5)",
-	"screen2_details_group": "2. Details"
+	"screen2_details_group": "2. Details",
 	"screen2_details_group_rk": "Runge-Kutta Details",
 	"msg_select_step_for_method": "Please select at least one step/order for the {0} method."
     "screen2_order_label": "Order:",
