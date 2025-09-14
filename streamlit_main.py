@@ -2831,13 +2831,13 @@ def show_simulation_page():
                     with cols_m4[i % 2]:
                         # Lấy giá trị default từ current_defaults
                         default_val = current_defaults.get(key, 0.0)
-                        param_inputs[key] = param_inputs[key] = st.number_input(label, value=float(default_val), step=None, format="%.4f", key=f"param_{model_id}_{key}")
+                        param_inputs[key] = st.number_input(label, value=float(default_val), step=None, format="%.4f", key=f"param_{model_id}_{key}")
             else:
                 for i, key in enumerate(internal_keys):
                     label = all_param_labels[i] if i < len(all_param_labels) else key
                     # Lấy giá trị default từ current_defaults
                     default_val = current_defaults.get(key, 1.0)
-                    param_inputs[key] = param_inputs[key] = st.number_input(label, value=float(default_val), step=None, format="%.4f", key=f"param_{model_id}_{key}")
+                    param_inputs[key] = st.number_input(label, value=float(default_val), step=None, format="%.4f", key=f"param_{model_id}_{key}")
             
             selected_component = 'x'
             if model_id == "model6":
