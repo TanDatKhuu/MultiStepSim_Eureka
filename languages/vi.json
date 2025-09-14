@@ -86,6 +86,13 @@
     "model6_component_A": "Nồng độ A ($y_A$)",
     "model6_component_B": "Nồng độ B ($y_B$)",
     "model6_component_C": "Nồng độ C ($y_C$)",
+    "screen2_details_group_rk": "2. Chi tiết Runge-Kutta",
+    "screen2_order_label": "Bậc:",
+    "screen2_select_all_steps_cb": "Tất cả",
+    "screen2_order2": "Bậc 2",
+    "screen2_order3": "Bậc 3",
+    "screen2_order4": "Bậc 4",
+    "msg_select_order": "Vui lòng chọn ít nhất một bậc cho Runge-Kutta."
     "screen2_back_button": "Quay lại chọn mô hình",
     "go_back_to_select": "Quay lại trang chọn mô hình",
     "screen2_goto_screen3_button": "Xem mô phỏng động",
