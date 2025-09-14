@@ -3585,7 +3585,7 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
     gif_buf = io.BytesIO()
     with imageio.get_writer(gif_buf, mode='I', format='gif', duration=0.1 / speed_multiplier, loop=None) as writer:
         try:
-            fig, ax = plt.subplots(figsize=(10, 10), dpi=90)
+            fig, ax = plt.subplots(figsize=(8, 6), dpi=100)
             final_stats = {}
 
             # --- Lấy dữ liệu mô phỏng cần thiết ---
@@ -3752,7 +3752,7 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                 
                 fig.canvas.draw()
                 frame_buf = io.BytesIO()
-                fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1)
+                fig.tight_layout(pad=1.5)
                 fig.savefig(frame_buf, format='png')
                 frame_buf.seek(0)
                 writer.append_data(imageio.imread(frame_buf))
@@ -3987,7 +3987,7 @@ def show_dynamic_simulation_page():
             # Trạng thái ban đầu
             plot_placeholder = st.empty()
             with plot_placeholder.container():
-                fig, ax = plt.subplots(figsize=(8,8))
+                fig, ax = plt.subplots(figsize=(8, 6), dpi=100)
                 ax.text(0.5, 0.5, tr("press_generate_to_see_info"), ha='center', va='center')
                 ax.set_xticks([]); ax.set_yticks([])
                 st.pyplot(fig)
