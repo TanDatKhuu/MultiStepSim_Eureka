@@ -2910,36 +2910,33 @@ def show_simulation_page():
     if submitted:
         # ... (logic xử lý form submit không thay đổi)
         with st.spinner(tr('screen2_info_area_running')):
-            step_options = {tr('screen2_step2'): 2, tr('screen2_step3'): 3, tr('screen2_step4'): 4}
-            if model_id != "model5": step_options[tr('screen2_step5')] = 5
+            step_options = {tr('screen2_step2'): 2, tr('screen2_step3'): 3, tr('screen2_step4'): 4, tr('screen2_step5'): 5}
             order_options = {tr('screen2_order2'): 2, tr('screen2_order3'): 3, tr('screen2_order4'): 4}
-            selected_steps_int = [step_options[s] for s in st.session_state.ms_steps]
-            selected_orders_int = [order_options[o] for o in st.session_state.ms_orders]
+            
             tasks_to_run = {}
-            # Đọc dữ liệu từ key 'ms_steps_ab' nếu Adams-Bashforth được chọn
+            is_valid = True
+            error_messages = []
+            
             if st.session_state.cb_ab:
                 if 'ms_steps_ab' in st.session_state and st.session_state.ms_steps_ab:
                     tasks_to_run["Bashforth"] = [step_options[s] for s in st.session_state.ms_steps_ab]
                 else:
                     is_valid = False
-                    error_messages.append(tr('msg_select_step_for_method').format(tr('screen2_method_ab')))
-			
-			# Đọc dữ liệu từ key 'ms_steps_am' nếu Adams-Moulton được chọn
+                    error_messages.append(tr('msg_select_step_for_method', "Vui lòng chọn bước cho {0}.").format(tr('screen2_method_ab')))
+
             if st.session_state.cb_am:
                 if 'ms_steps_am' in st.session_state and st.session_state.ms_steps_am:
                     tasks_to_run["Moulton"] = [step_options[s] for s in st.session_state.ms_steps_am]
                 else:
                     is_valid = False
-                    error_messages.append(tr('msg_select_step_for_method').format(tr('screen2_method_am')))
+                    error_messages.append(tr('msg_select_step_for_method', "Vui lòng chọn bước cho {0}.").format(tr('screen2_method_am')))
 
             if st.session_state.cb_rk:
                 if 'ms_orders' in st.session_state and st.session_state.ms_orders:
                     tasks_to_run["RungeKutta"] = [order_options[o] for o in st.session_state.ms_orders]
                 else:
                     is_valid = False
-                    error_messages.append(tr('msg_select_step_for_method').format(tr('screen2_method_rk')))
-            is_valid = True
-            error_messages = []
+                    error_messages.append(tr('msg_select_step_for_method', "Vui lòng chọn bậc cho {0}.").format(tr('screen2_method_rk')))
             if not tasks_to_run:
                 error_messages.append(tr('msg_select_method')); is_valid = False
             if 't0' in param_inputs and 't1' in param_inputs and param_inputs['t1'] <= param_inputs['t0']:
