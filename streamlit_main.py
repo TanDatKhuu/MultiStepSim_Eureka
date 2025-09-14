@@ -2795,99 +2795,101 @@ def show_simulation_page():
             st.session_state.page = 'model_selection'
             st.rerun()
 
-        if st.button(tr('screen2_back_button'), type="secondary"):
-             _cleanup_and_go_to_model_selection()
+        if st.button(tr("screen2_back_button"), type="primary"):
+            _cleanup_and_go_to_model_selection()
         
         st.title(tr("sidebar_title"))
         
         with st.form(key='simulation_form'):
             st.header(tr('screen2_method_group'))
+            # 1. Checkbox chọn các phương pháp chính
             select_ab = st.checkbox(tr('screen2_method_ab'), value=True, key='cb_ab')
             select_am = st.checkbox(tr('screen2_method_am'), value=True, key='cb_am')
             select_rk = st.checkbox(tr('screen2_method_rk'), value=False, key='cb_rk')
-            st.divider()
 
+            st.divider()
+            
+            # 2. Multiselect cho Adams Methods
             st.subheader(tr('screen2_details_group_ab'))
+            
             step_options = {tr('screen2_step2'): 2, tr('screen2_step3'): 3, tr('screen2_step4'): 4}
             if model_id != "model5":
                 step_options[tr('screen2_step5')] = 5
+            
             all_step_keys = list(step_options.keys())
             
-            # Sử dụng session_state để quản lý trạng thái của checkbox "Tất cả"
-            if 'select_all_steps' not in st.session_state:
-                st.session_state.select_all_steps = False
-            
-            if st.checkbox(tr('screen2_select_all_steps_cb'), key='select_all_steps'):
+            if st.checkbox(tr('screen2_select_all_steps_cb'), value=False, key='cb_all_steps'):
                 default_steps = all_step_keys
             else:
                 default_steps = [tr('screen2_step4')] if tr('screen2_step4') in all_step_keys else [all_step_keys[0]]
 
             selected_steps_display = st.multiselect(
-                tr('screen2_steps_label'), options=all_step_keys, default=default_steps, key='ms_steps'
+                tr('screen2_steps_label'),
+                options=all_step_keys,
+                default=default_steps,
+                key='ms_steps'
             )
+            
             st.divider()
-
+            
+            # 3. Multiselect cho Runge-Kutta
             st.subheader(tr('screen2_details_group_rk'))
             order_options = {tr('screen2_order2'): 2, tr('screen2_order3'): 3, tr('screen2_order4'): 4}
             all_order_keys = list(order_options.keys())
             
-            if 'select_all_orders' not in st.session_state:
-                st.session_state.select_all_orders = False
-
-            if st.checkbox(tr('screen2_select_all_steps_cb'), key='select_all_orders'):
+            if st.checkbox(tr('screen2_select_all_steps_cb'), value=False, key='cb_all_orders'):
                 default_orders = all_order_keys
             else:
                 default_orders = [tr('screen2_order4')]
 
             selected_orders_display = st.multiselect(
-                tr('screen2_order_label'), options=all_order_keys, default=default_orders, key='ms_orders'
+                tr('screen2_order_label'),
+                options=all_order_keys,
+                default=default_orders,
+                key='ms_orders'
             )
+
             st.divider()
 
+            # 4. Chọn bước nhảy h
             h_values = ["0.1", "0.05", "0.01", "0.005", "0.001"]
-            selected_h_str = st.radio(tr('screen2_h_label'), options=h_values, index=2, horizontal=True, key='radio_h')
-
+            selected_h_str = st.radio(tr('screen2_h_label'), options=h_values, index=2, horizontal=True)
+            
             st.header(tr('screen2_params_group'))
             param_inputs = {}
             internal_keys = model_data.get("internal_param_keys", [])
             current_defaults = MODEL_DEFAULTS.get(model_id, {})
             
-            # Sử dụng key đơn giản hơn cho number_input
             if model_id == "model4":
                 cols_m4 = st.columns(2)
-                # Dùng lại logic cũ để lấy label, vì nó ổn định hơn
                 internal_key_to_label_m4 = {
-                    "m": tr("model4_param_m"), "l": tr("model4_param_l"),
-                    "a": tr("model4_param_a"), "s": tr("model4_param_s"),
-                    "G": tr("model4_param_G"), "Y0": tr("model4_param_Y0"),
-                    "dY0": tr("model4_param_dY0"), "t0": tr("model4_param_t0"),
-                    "t1": tr("model4_param_t1"),
+                    "m": tr("model4_param_m"), "l": tr("model4_param_l"), "a": tr("model4_param_a"), 
+                    "s": tr("model4_param_s"), "G": tr("model4_param_G"), "Y0": tr("model4_param_Y0"),
+                    "dY0": tr("model4_param_dY0"), "t0": tr("model4_param_t0"), "t1": tr("model4_param_t1"),
                 }
                 for i, key in enumerate(internal_keys):
                     label = internal_key_to_label_m4.get(key, key)
                     with cols_m4[i % 2]:
                         default_val = current_defaults.get(key, 0.0)
-                        param_inputs[key] = st.number_input(label, value=float(default_val), step=1e-4, format="%.4f", key=f"param_{key}")
+                        param_inputs[key] = st.number_input(label, value=float(default_val), step=1e-4, format="%.4f", key=f"param_{model_id}_{key}")
             else:
-                # Dùng logic cũ, ổn định để lấy label từ param_keys_...
                 param_labels_key = f"param_keys_{st.session_state.lang}"
                 all_param_labels = model_data.get(param_labels_key, model_data.get("param_keys_vi", []))
-                
                 for i, key in enumerate(internal_keys):
-                    # Lấy label từ danh sách đã được dịch
                     label = all_param_labels[i] if i < len(all_param_labels) else key
                     default_val = current_defaults.get(key, 1.0)
-                    param_inputs[key] = st.number_input(label, value=float(default_val), step=1e-4, format="%.4f", key=f"param_{key}")
+                    param_inputs[key] = st.number_input(label, value=float(default_val), step=1e-4, format="%.4f", key=f"param_{model_id}_{key}")
 
             selected_component = 'x'
             if model_id == "model6":
                 comp_data_m6 = model_data.get("components", {})
                 comp_options_m6_display = [tr(v) for v in comp_data_m6.values()]
-                selected_comp_disp_m6 = st.radio(tr('model6_select_component'), comp_options_m6_display, horizontal=True, key="comp_m6")
-                selected_component = list(comp_data_m6.keys())[comp_options_m6_display.index(selected_comp_disp_m6)]
+                comp_options_m6_keys = list(comp_data_m6.keys())
+                selected_comp_disp_m6 = st.radio(tr('model6_select_component'), comp_options_m6_display, horizontal=True, key=f"comp_{model_id}")
+                selected_component = comp_options_m6_keys[comp_options_m6_display.index(selected_comp_disp_m6)]
             elif model_id == "model5":
                 comp_options_m5 = {tr('model5_component_x'): 'x', tr('model5_component_y'): 'y'}
-                selected_comp_disp_m5 = st.radio(tr('model5_select_component'), list(comp_options_m5.keys()), horizontal=True, key="comp_m5")
+                selected_comp_disp_m5 = st.radio(tr('model5_select_component'), list(comp_options_m5.keys()), horizontal=True, key=f"comp_{model_id}")
                 selected_component = comp_options_m5[selected_comp_disp_m5]
             
             submitted = st.form_submit_button(tr('screen2_init_button'), type="primary", use_container_width=True)
@@ -2895,11 +2897,6 @@ def show_simulation_page():
         if st.button(tr('screen2_refresh_button'), use_container_width=True):
             st.session_state.simulation_results = {}
             st.session_state.validated_params = {}
-            # Xóa các key của form để reset
-            keys_to_delete_on_refresh = ['select_all_steps', 'select_all_orders', 'ms_steps', 'ms_orders', 'radio_h']
-            for k in keys_to_delete_on_refresh:
-                if k in st.session_state:
-                    del st.session_state[k]
             st.rerun()
 
     # --- KHU VỰC HIỂN THỊ CHÍNH ---
@@ -3170,27 +3167,24 @@ def show_simulation_page():
             
             for method_short in sorted_methods:
                 step_results = results.get(method_short, {})
-                if not step_results: continue # Bỏ qua nếu phương pháp không có kết quả
+                if not step_results: continue
                 
-                # Lấy tên hiển thị của phương pháp
                 method_key_map = {"Bashforth": "ab", "Moulton": "am", "RungeKutta": "rk"}
                 abbreviation = method_key_map.get(method_short, method_short.lower())
                 method_display_name = tr(f'screen2_method_{abbreviation}')
 
-                # Hiển thị tiêu đề cho mỗi phương pháp
                 st.subheader(method_display_name)
 
-                # Lặp qua các bậc/số bước của phương pháp đó
                 for step_str, res in sorted(step_results.items()):
                     step = int(step_str)
                     
                     if method_short == "RungeKutta":
-                        run_title = f"{tr('screen2_order_label')} {step}"
+                        run_title_label = f"{tr('screen2_order_label')} {step}"
                     else:
-                        run_title = f"{tr('screen2_steps_label')} {step}"
-
-                    # SỬA LỖI Ở ĐÂY: Dùng `label=` thay vì `key=`
-                    with st.expander(label=run_title):
+                        run_title_label = f"{tr('screen2_steps_label')} {step}"
+                    
+                    # SỬA LỖI Ở ĐÂY: Dùng biến `run_title_label` đã tạo ở trên
+                    with st.expander(label=run_title_label):
                         slope_str = f"{res.get('order_slope', 'N/A'):.4f}" if isinstance(res.get('order_slope'), float) else "N/A"
                         st.markdown(f"**{tr('screen2_info_area_show_data_order')}** {slope_str}")
                         
@@ -3206,7 +3200,7 @@ def show_simulation_page():
                         else:
                             st.write(tr("screen2_info_area_show_data_no_points"))
                 
-                st.write("---") # Thêm đường kẻ ngăn cách giữa các phương pháp
+                st.write("---")
             
 # ==============================================
 #           PHẦN 4: TRANG MÔ PHỎNG ĐỘNG
