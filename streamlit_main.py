@@ -2982,7 +2982,7 @@ def show_simulation_page():
                 font_prop = FontProperties(fname=font_path)
                 plt.rcParams['font.family'] = font_prop.get_name()
                 plt.rcParams['axes.unicode_minus'] = False
-			#results_data = json.loads(results_data_json)
+			results_data = json.loads(results_data_json)
 		    
             figs = {}
             translations = load_language_file(lang_code)
