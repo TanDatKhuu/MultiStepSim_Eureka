@@ -2976,8 +2976,7 @@ def show_simulation_page():
         # (Hàm generate_and_get_figures và các tab còn lại giữ nguyên)
         @st.cache_data
         def generate_and_get_figures(results_data_json, lang_code, model_id, component):
-            
-			results_data = json.loads(results_data_json)
+            results_data = json.loads(results_data_json)
 		    
             figs = {}
             translations = load_language_file(lang_code)
