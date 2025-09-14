@@ -2953,7 +2953,8 @@ def show_simulation_page():
                 label=tr("screen2_goto_screen3_button"), 
                 icon="keyboard_double_arrow_right",  # SỬA LỖI 1: Dùng tham số icon
                 width='stretch',                      # SỬA LỖI 2: Dùng width='stretch'
-                type="primary"
+                type="primary",
+				key="goto_dynamic_sim_btn"
             ):
             # =============================================================
                 first_method_key = next(iter(results.keys()), None)
@@ -3716,7 +3717,7 @@ def show_dynamic_simulation_page():
             st.session_state.speed_multiplier = speed_multiplier
 
             # Highlight: Sửa logic của nút bấm
-            if st.button(f"🚀 {tr('generate_and_show_button')}", use_container_width=True, type="primary", disabled=is_processing):
+            if st.button(f"🚀 {tr('generate_and_show_button')}", use_container_width=True, type="primary", disabled=is_processing,key="regenerate_gif_btn"):
                 # Chỉ đặt cờ, không rerun
                 st.session_state.generate_gif_request = True
                 if 'generated_gif' in st.session_state:
