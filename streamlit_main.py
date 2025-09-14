@@ -3566,7 +3566,7 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
     gif_buf = io.BytesIO()
     with imageio.get_writer(gif_buf, mode='I', format='gif', duration=0.1 / speed_multiplier, loop=None) as writer:
         try:
-            fig, ax = plt.subplots(figsize=(8, 8), dpi=80)
+            fig, ax = plt.subplots(figsize=(10, 10), dpi=90)
             final_stats = {}
 
             # --- Lấy dữ liệu mô phỏng cần thiết ---
@@ -3695,7 +3695,7 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                     point_ship, = ax.plot(x_path[frame_idx], y_path[frame_idx], 
                                           marker='*', markersize=15, color='gold', 
                                           markeredgecolor='red', markeredgewidth=0.5)
-
+                    ax.axhline(0, color='slategray', linestyle=':', linewidth=1.2, zorder=0.5)
                     ax.set_xlabel(_tr('screen3_model5_plot_xlabel_sim1')); ax.set_ylabel(_tr('screen3_model5_plot_ylabel_sim1'))
                     ax.grid(True, linestyle=':'); ax.set_aspect('equal')
                     ax.set_title(_tr("screen3_model5_plot_title_sim1") + f"\nTime: {t_data[frame_idx]:.2f}s")
@@ -3733,6 +3733,7 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                 
                 fig.canvas.draw()
                 frame_buf = io.BytesIO()
+                fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1)
                 fig.savefig(frame_buf, format='png')
                 frame_buf.seek(0)
                 writer.append_data(imageio.imread(frame_buf))
