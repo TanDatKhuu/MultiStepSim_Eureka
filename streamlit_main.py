@@ -1858,13 +1858,13 @@ MODELS_DATA = {
             LANG_EN["model6_param_k1"], LANG_EN["model6_param_k2"],
             LANG_EN["model6_param_t0"], LANG_EN["model6_param_t1"],
         ],
-        # SỬA LỖI Ở DÒNG NÀY: Dùng ký tự đặc biệt t₀ và t₁
-        "internal_param_keys": ["y_A0", "y_B0", "y_C0", "k1", "k2", "t₀", "t₁"],
+        # SỬA LỖI: Dùng t0 và t1 thông thường
+        "internal_param_keys": ["y_A0", "y_B0", "y_C0", "k1", "k2", "t0", "t1"],
         
         "ode_func": lambda k1, k2: _model6_get_ode_func(k1, k2),
         
-        # SỬA LỖI Ở DÒNG NÀY: Dùng ký tự đặc biệt t₀
-        "exact_func": lambda k1, k2, y_A0, y_B0, y_C0, t₀: _model6_get_exact_func(k1, k2, y_A0, y_B0, y_C0, t₀),
+        # SỬA LỖI: Dùng t0 thông thường
+        "exact_func": lambda k1, k2, y_A0, y_B0, y_C0, t0: _model6_get_exact_func(k1, k2, y_A0, y_B0, y_C0, t0),
         
         "components": {
             "A": "model6_component_A",
@@ -1942,10 +1942,10 @@ def _model6_get_ode_func(k1, k2):
         return da, db, dc
     return f
 
-def _model6_get_exact_func(k1, k2, yA0, yB0, yC0, t0):
+def _model6_get_exact_func(k1, k2, yA0, yB0, yC0, t0): # SỬA t₀ thành t0 ở đây
     """Tạo hàm trả về nghiệm giải tích (a(t), b(t), c(t)) cho Model 6."""
     def exact_solution_at_t(t_arr):
-        t = np.asarray(t_arr) - t0
+        t = np.asarray(t_arr) - t0 # Và ở đây
         
         yA = yA0 * np.exp(-k1 * t)
         
