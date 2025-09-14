@@ -2795,8 +2795,7 @@ def show_simulation_page():
             st.session_state.page = 'model_selection'
             st.rerun()
 
-        # Nút Quay lại chọn mô hình
-        if st.button(tr("screen2_back_button"), use_container_width=True, type="primary"):
+        if st.button(tr("screen2_back_button"), use_container_width=True, type="secondary"):
             _cleanup_and_go_to_model_selection()
         
         st.title(tr("sidebar_title"))
@@ -2837,7 +2836,7 @@ def show_simulation_page():
             st.divider()
 
             h_values = ["0.1", "0.05", "0.01", "0.005", "0.001"]
-            selected_h_str = st.radio(tr('screen2_h_label'), options=h_values, index=2, horizontal=True, key='radio_h')
+            selected_h_str = st.radio(tr('screen2_h_label'), options=h_values, index=2, horizontal=True)
             
             st.header(tr('screen2_params_group'))
             param_inputs = {}
@@ -2863,15 +2862,12 @@ def show_simulation_page():
                 selected_comp_disp_m5 = st.radio(tr('model5_select_component'), list(comp_options_m5.keys()), horizontal=True, key=f"comp_{model_id}")
                 selected_component = comp_options_m5[selected_comp_disp_m5]
             
-            # Nút Khởi tạo và Làm mới nằm trong form
-            col_btn1, col_btn2 = st.columns(2)
-            with col_btn1:
-                submitted = st.form_submit_button(tr('screen2_init_button'), type="primary", use_container_width=True)
-            with col_btn2:
-                if st.form_submit_button(tr('screen2_refresh_button'), use_container_width=True):
-                    st.session_state.simulation_results = {}
-                    st.session_state.validated_params = {}
-                    st.rerun()
+            submitted = st.form_submit_button(tr('screen2_init_button'), type="primary", use_container_width=True)
+
+        if st.button(tr('screen2_refresh_button'), use_container_width=True):
+            st.session_state.simulation_results = {}
+            st.session_state.validated_params = {}
+            st.rerun()
 
     # --- KHU VỰC HIỂN THỊ CHÍNH ---
     st.header(tr('simulation_results_title'))
@@ -3135,6 +3131,7 @@ def show_simulation_page():
         with tab3:
             st.pyplot(figures['order'])
         with tab4:
+            # Sắp xếp các phương pháp theo thứ tự mong muốn
             method_order = ["Bashforth", "Moulton", "RungeKutta"]
             sorted_methods = sorted(results.keys(), key=lambda x: method_order.index(x) if x in method_order else 99)
             
