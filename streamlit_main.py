@@ -2916,19 +2916,21 @@ def show_simulation_page():
             selected_steps_int = [step_options[s] for s in st.session_state.ms_steps]
             selected_orders_int = [order_options[o] for o in st.session_state.ms_orders]
             tasks_to_run = {}
-            if st.session_state.cb_ab:
-                if 'ms_steps_ab' in st.session_state and st.session_state.ms_steps_ab:
-                    tasks_to_run["Bashforth"] = [step_options[s] for s in st.session_state.ms_steps_ab]
-                else:
-                    is_valid = False
-                    error_messages.append(tr('msg_select_step_for_method').format(tr('screen2_method_ab')))
-
-            if st.session_state.cb_am:
-                if 'ms_steps_am' in st.session_state and st.session_state.ms_steps_am:
-                    tasks_to_run["Moulton"] = [step_options[s] for s in st.session_state.ms_steps_am]
-                else:
-                    is_valid = False
-                    error_messages.append(tr('msg_select_step_for_method').format(tr('screen2_method_am')))
+            # Đọc dữ liệu từ key 'ms_steps_ab' nếu Adams-Bashforth được chọn
+			if st.session_state.cb_ab:
+			    if 'ms_steps_ab' in st.session_state and st.session_state.ms_steps_ab:
+			        tasks_to_run["Bashforth"] = [step_options[s] for s in st.session_state.ms_steps_ab]
+			    else:
+			        is_valid = False
+			        error_messages.append(tr('msg_select_step_for_method').format(tr('screen2_method_ab')))
+			
+			# Đọc dữ liệu từ key 'ms_steps_am' nếu Adams-Moulton được chọn
+			if st.session_state.cb_am:
+			    if 'ms_steps_am' in st.session_state and st.session_state.ms_steps_am:
+			        tasks_to_run["Moulton"] = [step_options[s] for s in st.session_state.ms_steps_am]
+			    else:
+			        is_valid = False
+			        error_messages.append(tr('msg_select_step_for_method').format(tr('screen2_method_am')))
 
             if st.session_state.cb_rk:
                 if 'ms_orders' in st.session_state and st.session_state.ms_orders:
