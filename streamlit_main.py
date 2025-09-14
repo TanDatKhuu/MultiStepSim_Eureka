@@ -2796,7 +2796,7 @@ def show_simulation_page():
             st.rerun()
 
         # Nút Quay lại chọn mô hình
-        if st.button(tr("screen2_back_button"), type="primary", use_container_width=True):
+        if st.button(tr("screen2_back_button"), use_container_width=True, type="primary"):
             _cleanup_and_go_to_model_selection()
         
         st.title(tr("sidebar_title"))
@@ -2837,7 +2837,7 @@ def show_simulation_page():
             st.divider()
 
             h_values = ["0.1", "0.05", "0.01", "0.005", "0.001"]
-            selected_h_str = st.radio(tr('screen2_h_label'), options=h_values, index=2, horizontal=True)
+            selected_h_str = st.radio(tr('screen2_h_label'), options=h_values, index=2, horizontal=True, key='radio_h')
             
             st.header(tr('screen2_params_group'))
             param_inputs = {}
@@ -3156,8 +3156,7 @@ def show_simulation_page():
                     else:
                         run_title_label = f"{tr('screen2_steps_label')} {step}"
                     
-                    # SỬA LỖI Ở ĐÂY: Thêm key duy nhất cho mỗi expander
-                    with st.expander(label=run_title_label, expanded=False):
+                    with st.expander(label=run_title_label):
                         slope_str = f"{res.get('order_slope', 'N/A'):.4f}" if isinstance(res.get('order_slope'), float) else "N/A"
                         st.markdown(f"**{tr('screen2_info_area_show_data_order')}** {slope_str}")
                         
