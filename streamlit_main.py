@@ -3498,7 +3498,7 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
             fig, ax = plt.subplots(figsize=(8, 8), dpi=80)
             final_stats = {}
 
-            # --- Lấy dữ liệu mô phỏng cần thiết (LOGIC ĐÃ SỬA LỖI) ---
+            # --- Lấy dữ liệu mô phỏng cần thiết ---
             sim_data = {}
             if model_id == 'model5' and st.session_state.m5_scenario == 2:
                 if 'm5s2_results' not in st.session_state:
@@ -3510,21 +3510,17 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                 if results:
                     highest_step_found = -1
                     best_method_key = None
-                    # Lặp qua các phương thức như "Bashforth", "Moulton"
                     for method_key, step_results in results.items():
-                        if step_results: # Kiểm tra xem có kết quả nào cho phương thức này không
-                            # Tìm bậc/số bước cao nhất trong các kết quả của phương thức này
+                        if step_results:
                             current_max_step = max(step_results.keys())
                             if current_max_step > highest_step_found:
                                 highest_step_found = current_max_step
                                 best_method_key = method_key
                     
-                    # Nếu tìm thấy một lần chạy hợp lệ, lấy dữ liệu của nó
                     if best_method_key is not None and highest_step_found != -1:
                         best_sim_data = results[best_method_key][highest_step_found]
                 
                 sim_data = best_sim_data if best_sim_data is not None else {}
-            # === KẾT THÚC PHẦN SỬA LỖI LOGIC ===
 
             if not sim_data: 
                 print("Lỗi: Không tìm thấy dữ liệu mô phỏng để tạo GIF.")
@@ -3565,19 +3561,31 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
 
                 ax.clear()
                 
+                # --- MODEL 2: TĂNG TRƯỞNG TẾ BÀO (LOGIC ĐÃ SỬA) ---
                 if model_id == 'model2':
                     t_data, y_data = sim_data['t_plot'], sim_data['approx_sol_plot']
                     target_n = int(round(y_data[frame_idx]))
+                    
+                    # === BẮT ĐẦU THAY ĐỔI LOGIC SINH SẢN ===
                     if len(model2_cells) < target_n:
-                        existing_pos = {(cell.x, cell.y) for cell in model2_cells}
-                        for _ in range(target_n - len(model2_cells)):
-                            parent = random.choice(model2_cells)
-                            for _ in range(20):
+                        to_add = target_n - len(model2_cells)
+                        for _ in range(to_add):
+                            # 1. CHỌN TẾ BÀO MẸ TỪ 20 TẾ BÀO MỚI NHẤT -> Tạo cụm đặc hơn
+                            parent_candidates = model2_cells[-20:] 
+                            parent = random.choice(parent_candidates)
+                            
+                            # 2. Cố gắng tìm vị trí trống xung quanh tế bào mẹ
+                            for _ in range(20): # 20 lần thử
                                 angle = random.uniform(0, 2 * np.pi)
-                                new_x, new_y = parent.x + np.cos(angle) * 1.1, parent.y + np.sin(angle) * 1.1
-                                if not any(np.hypot(new_x - px, new_y - py) < 1.0 for px, py in existing_pos):
+                                # 3. Đặt tế bào con ngay sát cạnh tế bào mẹ (khoảng cách 1.0)
+                                new_x = parent.x + np.cos(angle) * 1.0 
+                                new_y = parent.y + np.sin(angle) * 1.0
+                                
+                                # 4. Kiểm tra chồng lấp với tất cả các tế bào khác
+                                if not any(np.hypot(new_x - c.x, new_y - c.y) < 1.0 for c in model2_cells):
                                     model2_cells.append(Cell(new_x, new_y, parent.gen + 1))
-                                    existing_pos.add((new_x, new_y)); break
+                                    break # Tìm được vị trí, thoát vòng lặp thử và sinh tế bào tiếp theo
+                    # === KẾT THÚC THAY ĐỔI LOGIC ===
                     
                     all_x = [c.x for c in model2_cells]; all_y = [c.y for c in model2_cells]
                     for cell in model2_cells: ax.add_patch(MplCircle((cell.x, cell.y), radius=0.5, color='brown', alpha=0.7))
@@ -3588,6 +3596,7 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                     ax.legend([MplCircle((0,0), 0.1, color='brown')], [tr("screen3_legend_model2_cell")], loc='upper right')
                     ax.set_title(tr("screen3_model2_anim_plot_title") + f"\nTime: {t_data[frame_idx]:.2f}s | Cells: {len(model2_cells)}")
 
+                # --- MODEL 3: ABM DỊCH BỆNH ---
                 elif model_id == 'model3':
                     ended_by_logic = abm_instance.step()
                     ax.set_xlim(0, abm_instance.room_dimension); ax.set_ylim(0, abm_instance.room_dimension)
@@ -3601,6 +3610,7 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                     ax.set_title(tr("screen3_abm_anim_plot_title") + f"\nStep: {stats['time_step']} | Infected: {stats['infected_count']}")
                     if ended_by_logic: break
 
+                # --- MODEL 5.1: CON THUYỀN ---
                 elif model_id == 'model5' and st.session_state.m5_scenario == 1:
                     t_data = sim_data.get('t_plot')
                     x_path, y_path = sim_data['approx_sol_plot_all_components']
@@ -3612,6 +3622,7 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                     ax.grid(True); ax.legend(); ax.set_aspect('equal')
                     ax.set_title(tr("screen3_model5_plot_title_sim1") + f"\nTime: {t_data[frame_idx]:.2f}s")
                 
+                # --- MODEL 5.2: TÀU KHU TRỤC ---
                 elif model_id == 'model5' and st.session_state.m5_scenario == 2:
                     t_points, state_hist = sim_data['time_points'], sim_data['state_history']
                     is_caught, catch_time = sim_data['caught'], sim_data['time_of_catch']
@@ -3633,6 +3644,7 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                     if is_caught and t_points[frame_idx] >= catch_time:
                         break
                 
+                # --- Ghi frame vào GIF ---
                 fig.canvas.draw()
                 frame_buf = io.BytesIO()
                 fig.savefig(frame_buf, format='png', bbox_inches='tight')
@@ -3642,6 +3654,7 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
 
             plt.close(fig)
 
+            # --- Tạo thông tin cuối cùng (final_stats) ---
             if model_id == 'model2':
                 c_val = st.session_state.get('last_calculated_c', 'N/A')
                 final_stats = {
