@@ -3685,7 +3685,7 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                 progress_bar.progress(progress_percent)
                 progress_text.text(f"{_tr('gif_generating_spinner')} ({frame_idx + 1}/{num_frames})")
                 ax.clear()
-                
+                time_unit = _tr("time_unit_seconds")
                 if model_id == 'model2':
                     t_data, y_data = sim_data['t_plot'], sim_data['approx_sol_plot']
                     target_n = int(round(y_data[frame_idx]))
@@ -3707,7 +3707,7 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                         ax.set_xlim(-max_coord, max_coord); ax.set_ylim(-max_coord, max_coord)
                     ax.set_aspect('equal'); ax.axis('off')
                     ax.legend([MplCircle((0,0), 0.1, color='#A52A2A', ec='black', lw=0.5)], [_tr("screen3_legend_model2_cell")], loc='upper right')
-                    ax.set_title(_tr("screen3_model2_anim_plot_title") + f"\nTime: {t_data[frame_idx]:.2f}s | Cells: {len(model2_cells)}")
+                    ax.set_title(_tr("screen3_model2_anim_plot_title") + f"\nTime: {t_data[frame_idx]:.2f} {time_unit} | Cells: {len(model2_cells)}")
 
                 elif model_id == 'model3':
                     ended_by_logic = abm_instance.step()
@@ -3723,7 +3723,7 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                     seconds_per_step = abm_params.get("seconds_per_step", 0.1) 
                     real_time_seconds = stats['time_step'] * seconds_per_step
                     title_text = _tr("screen3_model3_anim_plot_title"); time_label = _tr("screen3_actual_time"); infected_label = _tr("screen3_infected_label_short")
-                    full_title = f"{title_text}\n{time_label}: {real_time_seconds:.2f}s | {infected_label}: {stats['infected_count']}"
+                    full_title = f"{title_text}\n{time_label}: {real_time_seconds:.2f} {time_unit} | {infected_label}: {stats['infected_count']}"
                     ax.set_title(full_title, fontsize=9)
                     if ended_by_logic: break
 
@@ -3756,7 +3756,7 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
 
                     # THAY ĐỔI: Tái sử dụng key dịch 'screen3_result_time'
                     time_label = _tr("screen3_result_time").replace(":", "") # Bỏ dấu hai chấm
-                    ax.set_title(f"{_tr('screen3_model5_plot_title_sim1')}\n{time_label}: {t_data[frame_idx]:.2f}s")
+                    ax.set_title(f"{_tr('screen3_model5_plot_title_sim1')}\n{time_label}: {t_data[frame_idx]:.2f} {time_unit}")
                     
                     proxy_ship_legend = Line2D([0], [0], linestyle='None', marker='*', markersize=10, color='gold', markeredgecolor='red', markeredgewidth=0.5)
                     legend_handles = [line_ship_path, proxy_ship_legend]
@@ -3791,7 +3791,7 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                     ax.set_xlabel(_tr("screen3_model5_plot_xlabel_sim2")); ax.set_ylabel(_tr("screen3_model5_plot_ylabel_sim2"))
                     ax.grid(True); ax.legend(); ax.set_aspect('equal')
                     time_label = _tr("screen3_result_time").replace(":", "") # Lấy "Thời gian mô phỏng (t)" và bỏ dấu :
-                    ax.set_title(f"{_tr('screen3_model5_plot_title_sim2')}\n{time_label}: {t_points[frame_idx]:.2f}s")
+                    ax.set_title(f"{_tr('screen3_model5_plot_title_sim2')}\n{time_label}: {t_points[frame_idx]:.2f} {time_unit}")
                     if is_caught and t_points[frame_idx] >= catch_time: break
                 
                 # --- Ghi frame vào GIF ---
@@ -3815,14 +3815,14 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                     _tr('screen3_total_pop'): {'value': stats['total_population']},
                     _tr('screen3_susceptible_pop'): {'value': stats['susceptible_count']},
                     _tr('screen3_infected_pop'): {'value': stats['infected_count']},
-                    _tr('screen3_actual_time'): {'value': f"{final_real_time:.2f} s"} 
+                    _tr('screen3_actual_time'): {'value': f"{final_real_time:.2f} {time_unit}"} 
                 }
             elif model_id == 'model2':
                 c_val = st.session_state.get('last_calculated_c', 'N/A')
                 final_stats = {
                     _tr('screen3_result_c'): {'value': f"{c_val:.4g}" if isinstance(c_val, float) else "N/A"},
                     _tr('screen3_result_mass'): {'value': len(model2_cells)},
-                    _tr('screen3_result_time'): {'value': f"{sim_data['t_plot'][-1]:.2f} s"}
+                    _tr('screen3_result_time'): {'value': f"{sim_data['t_plot'][-1]:.2f} {time_unit}"}
                 }
             elif model_id == 'model5' and st.session_state.m5_scenario == 1:
                 if sim_data.get('approx_sol_plot_all_components') is not None:
@@ -3830,7 +3830,7 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                     final_stats = {
                         _tr('screen3_m5_boat_speed'): {'value': f"{validated_params['params']['v']:.2f}"},
                         _tr('screen3_m5_water_speed'): {'value': f"{validated_params['params']['u']:.2f}"},
-                        _tr('screen3_m5_crossing_time'): {'value': f"{sim_data['t_plot'][-1]:.2f} s"},
+                        _tr('screen3_m5_crossing_time'): {'value': f"{sim_data['t_plot'][-1]:.2f} {time_unit}"},
                         _tr('screen3_m5_boat_reaches_target'): {'value': _tr('answer_yes') if abs(x_path[-1]) < 0.01 * validated_params['params']['x0'] else _tr('answer_no'), 'size_class': 'metric-value-small'},
                         _tr('screen3_m5_boat_final_pos'): {'value': f"({x_path[-1]:.2f}, {y_path[-1]:.2f})", 'size_class': 'metric-value-small'}
                     }
@@ -3848,7 +3848,7 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                 final_stats = {
                     _tr('screen3_m5_submarine_speed'): {'value': f"{st.session_state.m5s2_params['v_tn_max']:.2f}"},
                     _tr('screen3_m5_destroyer_speed'): {'value': f"{st.session_state.m5s2_params['v_kt']:.2f}"},
-                    _tr('screen3_m5_catch_time'): {'value': f"{sim_data['time_points'][-1]:.2f} s"},
+                    _tr('screen3_m5_catch_time'): {'value': f"{sim_data['time_points'][-1]:.2f} {time_unit}"},
                     _tr('screen3_m5_destroyer_catches_submarine'): {'value': status_str, 'size_class': 'metric-value-small'},
                     _tr('screen3_m5_catch_point'): {'value': catch_point_str, 'size_class': 'metric-value-small'}
                 }
