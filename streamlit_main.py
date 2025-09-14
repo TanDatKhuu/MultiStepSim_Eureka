@@ -3168,12 +3168,33 @@ def show_simulation_page():
                         st.markdown(f"**{tr('screen2_info_area_show_data_order')}** {slope_str}")
                         t = res.get('t_plot'); approx = res.get('approx_sol_plot'); exact = res.get('exact_sol_plot')
                         if t is not None and approx is not None and len(t) > 0:
-                            df_data = {'t': t, tr('screen2_info_area_show_data_approx'): approx}
+                            # === BẮT ĐẦU THAY ĐỔI ===
+                            # 1. Tạo dictionary dữ liệu
+                            df_data = {
+                                't': t, 
+                                tr('screen2_info_area_show_data_approx'): approx
+                            }
+                            # 2. Tạo dictionary định dạng
+                            formatter = {
+                                't': '{:.10f}',
+                                tr('screen2_info_area_show_data_approx'): '{:.10f}'
+                            }
+                            # 3. Thêm cột 'Chính xác' và 'Sai số' nếu có
                             if exact is not None:
-                                df_data[tr('screen2_info_area_show_data_exact')] = exact
-                                df_data[tr('screen2_info_area_show_data_error')] = np.abs(np.array(approx) - np.array(exact))
+                                exact_col_name = tr('screen2_info_area_show_data_exact')
+                                error_col_name = tr('screen2_info_area_show_data_error')
+                                
+                                df_data[exact_col_name] = exact
+                                df_data[error_col_name] = np.abs(np.array(approx) - np.array(exact))
+                                
+                                formatter[exact_col_name] = '{:.10f}'
+                                # ĐÂY LÀ THAY ĐỔI QUAN TRỌNG NHẤT
+                                formatter[error_col_name] = '{:.8e}' # 'e' cho scientific notation
+                            
+                            # 4. Tạo và hiển thị DataFrame với định dạng mới
                             df = pd.DataFrame(df_data)
-                            st.dataframe(df.head(20).style.format("{:.10f}"), use_container_width=True, height=300)
+                            st.dataframe(df.head(20).style.format(formatter), use_container_width=True, height=300)
+                            # === KẾT THÚC THAY ĐỔI ===
                         else:
                             st.write(tr("screen2_info_area_show_data_no_points"))
                 st.write("---")
