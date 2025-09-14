@@ -92,7 +92,7 @@
     "screen2_order2": "2nd-order",
     "screen2_order3": "3rd-order",
     "screen2_order4": "4th-order",
-    "msg_select_order": "Please select at least one order for Runge-Kutta."
+    "msg_select_order": "Please select at least one order for Runge-Kutta.",
 	"go_back_to_select": "Back to model selection",
 	"screen2_back_button": "Back to model selection",
 	"screen2_goto_screen3_button": "View dynamic simulation",
