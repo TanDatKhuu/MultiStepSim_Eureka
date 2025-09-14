@@ -3014,11 +3014,22 @@ def show_simulation_page():
 
         can_run_dynamic = model_data.get("can_run_abm_on_screen3", False) or model_id in ['model2', 'model5']
         if can_run_dynamic:
-            # === THAY ĐỔI QUAN TRỌNG Ở ĐÂY ===
-            # Không cần tạo thêm biến dynamic_plot_data
             if st.button(tr("screen2_goto_screen3_button"), use_container_width=True, type="primary"):
-                st.session_state.page = 'dynamic_simulation'
-                st.rerun()
+                # Logic mới: Lấy phương pháp đầu tiên có kết quả để tạo dữ liệu động
+                first_method_key = next(iter(results.keys()), None)
+                if first_method_key:
+                    first_method_results = results[first_method_key]
+                    highest_step = max(first_method_results.keys(), key=int) if first_method_results else None
+                    if highest_step:
+                        # Lưu validated_params vào session state để Screen 3 có thể truy cập
+                        st.session_state.validated_params_for_dynamic = validated_params.copy()
+                        # Đánh dấu rằng chúng ta muốn chuyển trang
+                        st.session_state.page = 'dynamic_simulation'
+                        st.rerun()
+                    else:
+                        st.toast("Không có kết quả hợp lệ để tạo mô phỏng động.", icon="⚠️")
+                else:
+                    st.toast("Không có kết quả hợp lệ để tạo mô phỏng động.", icon="⚠️")
         
         # ... (giữ nguyên các tab hiển thị đồ thị và dữ liệu)
         tab1, tab2, tab3, tab4 = st.tabs([
@@ -3729,7 +3740,7 @@ def show_dynamic_simulation_page():
         placeholder.markdown(html_content, unsafe_allow_html=True)
 
     # --- Kiểm tra dữ liệu đầu vào ---
-    validated_params = st.session_state.get('validated_params', {})
+    validated_params = st.session_state.get('validated_params_for_dynamic', {})
     if not validated_params or 'model_id' not in validated_params:
         st.error(tr("msg_no_data_for_dynamic"))
         if st.button(tr('screen3_back_button')): _cleanup_and_navigate('simulation')
