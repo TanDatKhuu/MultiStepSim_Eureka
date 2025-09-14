@@ -2794,33 +2794,26 @@ def show_simulation_page():
         with st.form(key='simulation_form'):
             # ... (giữ nguyên toàn bộ phần form giống code của bạn)
             st.header(tr('screen2_method_group'))
-            # 1. Checkbox chọn các phương pháp chính
-            cols_methods = st.columns(3)
-            with cols_methods[0]:
-                select_ab = st.checkbox(tr('screen2_method_ab'), value=True, key='cb_ab')
-            with cols_methods[1]:
-                select_am = st.checkbox(tr('screen2_method_am'), value=True, key='cb_am')
-            with cols_methods[2]:
-                select_rk = st.checkbox(tr('screen2_method_rk'), value=False, key='cb_rk')
+            # 1. Checkbox chọn các phương pháp chính - mỗi cái một dòng
+            select_ab = st.checkbox(tr('screen2_method_ab'), value=True, key='cb_ab')
+            select_am = st.checkbox(tr('screen2_method_am'), value=True, key='cb_am')
+            select_rk = st.checkbox(tr('screen2_method_rk'), value=False, key='cb_rk')
 
             st.divider()
             
             # 2. Multiselect cho Adams Methods
-            st.subheader(tr('screen2_details_group_ab')) # Dùng chung title cho cả AB/AM
+            st.subheader(tr('screen2_details_group_ab'))
             
             step_options = {tr('screen2_step2'): 2, tr('screen2_step3'): 3, tr('screen2_step4'): 4}
-            # Chỉ thêm tùy chọn 5 bước nếu không phải Model 5
             if model_id != "model5":
                 step_options[tr('screen2_step5')] = 5
             
             all_step_keys = list(step_options.keys())
             
             # Nút chọn tất cả cho Steps
-            select_all_steps = st.checkbox(tr('screen2_select_all_steps_cb'), value=False, key='cb_all_steps')
-            if select_all_steps:
+            if st.checkbox(tr('screen2_select_all_steps_cb'), value=False, key='cb_all_steps'):
                 default_steps = all_step_keys
             else:
-                # Mặc định chọn 4 bước nếu có, nếu không thì chọn bước đầu tiên
                 default_steps = [tr('screen2_step4')] if tr('screen2_step4') in all_step_keys else [all_step_keys[0]]
 
             selected_steps_display = st.multiselect(
@@ -2829,7 +2822,6 @@ def show_simulation_page():
                 default=default_steps,
                 key='ms_steps'
             )
-            selected_steps_int = [step_options[s] for s in selected_steps_display]
             
             st.divider()
             
@@ -2839,11 +2831,10 @@ def show_simulation_page():
             all_order_keys = list(order_options.keys())
             
             # Nút chọn tất cả cho Orders
-            select_all_orders = st.checkbox(tr('screen2_select_all_steps_cb'), value=False, key='cb_all_orders')
-            if select_all_orders:
+            if st.checkbox(tr('screen2_select_all_steps_cb'), value=False, key='cb_all_orders'):
                 default_orders = all_order_keys
             else:
-                default_orders = [tr('screen2_order4')] # Mặc định chọn bậc 4
+                default_orders = [tr('screen2_order4')]
 
             selected_orders_display = st.multiselect(
                 tr('screen2_order_label'),
@@ -2851,7 +2842,6 @@ def show_simulation_page():
                 default=default_orders,
                 key='ms_orders'
             )
-            selected_orders_int = [order_options[o] for o in selected_orders_display]
 
             st.divider()
 
@@ -2914,41 +2904,27 @@ def show_simulation_page():
 
     if submitted:
         with st.spinner(tr('screen2_info_area_running')):
-            # --- 1. Lấy lựa chọn của người dùng ---
-            selected_methods = []
-            if st.session_state.cb_ab: selected_methods.append("Bashforth")
-            if st.session_state.cb_am: selected_methods.append("Moulton")
-            if st.session_state.cb_rk: selected_methods.append("RungeKutta")
+            # --- 1. Lấy lựa chọn của người dùng (từ widget keys đã định nghĩa ở trên) ---
+            step_options = {tr('screen2_step2'): 2, tr('screen2_step3'): 3, tr('screen2_step4'): 4}
+            if model_id != "model5": step_options[tr('screen2_step5')] = 5
+            order_options = {tr('screen2_order2'): 2, tr('screen2_order3'): 3, tr('screen2_order4'): 4}
+            
+            selected_steps_int = [step_options[s] for s in st.session_state.ms_steps]
+            selected_orders_int = [order_options[o] for o in st.session_state.ms_orders]
 
             # --- 2. Xây dựng danh sách công việc (tasks_to_run) ---
-            tasks_to_run = { "Bashforth": [], "Moulton": [], "RungeKutta": [] }
-            
-            # Lấy các bước/bậc từ multiselect
-            # selected_steps_int và selected_orders_int đã được tính ở trên
-            
-            if "Bashforth" in selected_methods:
-                tasks_to_run["Bashforth"] = selected_steps_int.copy()
-
-            if "Moulton" in selected_methods:
+            tasks_to_run = {}
+            if st.session_state.cb_ab:
+                tasks_to_run["Bashforth"] = selected_steps_int
+            if st.session_state.cb_am:
                 # AM chỉ chạy đến 4 bước
-                tasks_to_run["Moulton"] = [s for s in selected_steps_int if s in [2, 3, 4]]
-                if 5 in selected_steps_int and 4 not in tasks_to_run["Moulton"]:
-                    tasks_to_run["Moulton"].append(4) # Tự động thêm bậc 4 nếu chọn 5
-
-            if "RungeKutta" in selected_methods:
-                # Nếu có Adams được chọn, RK chạy theo các bậc tương ứng
-                if "Bashforth" in selected_methods or "Moulton" in selected_methods:
-                    for step in selected_steps_int:
-                        if step in [2, 3, 4]:
-                            tasks_to_run["RungeKutta"].append(step)
-                    if 5 in selected_steps_int and 4 not in tasks_to_run["RungeKutta"]:
-                        tasks_to_run["RungeKutta"].append(4)
-                else: # Nếu chỉ có RK được chọn
-                    tasks_to_run["RungeKutta"] = selected_orders_int.copy()
+                am_steps = [s for s in selected_steps_int if s in [2, 3, 4]]
+                if 5 in selected_steps_int and 4 not in am_steps:
+                    am_steps.append(4)
+                tasks_to_run["Moulton"] = am_steps
+            if st.session_state.cb_rk:
+                tasks_to_run["RungeKutta"] = selected_orders_int
             
-            # Loại bỏ các tác vụ rỗng
-            tasks_to_run = {m: steps for m, steps in tasks_to_run.items() if steps}
-
             # --- 3. Validate đầu vào ---
             is_valid = True
             error_messages = []
@@ -2958,6 +2934,14 @@ def show_simulation_page():
             if 't0' in param_inputs and 't1' in param_inputs and param_inputs['t1'] <= param_inputs['t0']:
                 error_messages.append(tr('msg_t_end_error'))
                 is_valid = False
+            # Kiểm tra xem ít nhất một lựa chọn chi tiết có được chọn không
+            if (st.session_state.cb_ab or st.session_state.cb_am) and not selected_steps_int:
+                error_messages.append(tr('msg_select_step'))
+                is_valid = False
+            if st.session_state.cb_rk and not selected_orders_int:
+                error_messages.append(tr("msg_select_order", "Vui lòng chọn ít nhất một bậc cho Runge-Kutta."))
+                is_valid = False
+
 
             if not is_valid:
                 for msg in error_messages:
@@ -2968,20 +2952,19 @@ def show_simulation_page():
                     if key in st.session_state:
                         del st.session_state[key]
                 
-                # Hàm _prepare_simulation_functions cần `selected_method_short`, ta sẽ truyền "Bashforth" làm mặc định
-                # vì logic tính 'c' của nó phức tạp hơn.
-                prep_ok, prep_data, calculated_params = _prepare_simulation_functions(model_data, param_inputs, "Bashforth")
+                # Sửa lỗi KeyError: Lấy method_short từ task đầu tiên, hoặc mặc định
+                first_method_short = next(iter(tasks_to_run), "Bashforth")
+                prep_ok, prep_data, calculated_params = _prepare_simulation_functions(model_data, param_inputs, first_method_short)
                 
                 if prep_ok:
                     for key, value in calculated_params.items():
                         st.session_state[f'last_calculated_{key}'] = value
                     
                     ode_func, exact_callable, y0, t_start, t_end = prep_data
-                    
-                    # Dictionary lớn để chứa tất cả kết quả
                     results_dict = {}
 
                     for method_short, steps_list in tasks_to_run.items():
+                        if not steps_list: continue # Bỏ qua nếu danh sách bước/bậc rỗng
                         results_dict[method_short] = {}
                         for steps in sorted(list(set(steps_list))):
                             res = _perform_single_simulation(
@@ -2991,7 +2974,6 @@ def show_simulation_page():
                             if res:
                                 results_dict[method_short][steps] = res
                     
-                    # Xóa các phương pháp không có kết quả
                     results_dict = {m: sr for m, sr in results_dict.items() if sr}
                     
                     st.session_state.simulation_results = results_dict
@@ -3000,7 +2982,7 @@ def show_simulation_page():
                         'h_target': float(selected_h_str), 
                         'model_id': model_id,
                         'selected_component': selected_component,
-                        'tasks_run': tasks_to_run # Lưu lại các task đã chạy
+                        'tasks_run': tasks_to_run
                     }
                     st.rerun()
                 else:
