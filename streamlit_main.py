@@ -1606,19 +1606,19 @@ def AM4_system_M5_Sim2_CombinedLogic(f_combined_like, t_array_full_potential, in
 def get_model1_ode(k):
     return lambda t, y: k * y
 
-def get_model1_exact(O0, k, t0):
+def get_model1_exact(O0, k, t0): # SỬA: O₀ -> O0, t₀ -> t0
     return lambda t: O0 * np.exp(k * (np.asarray(t) - t0))
 
 def get_model2_ode(c):
     return lambda t, y: c * (y**(2.0/3.0) + 1e-15)
 
-def get_model2_exact(x0, c, t0):
+def get_model2_exact(x0, c, t0): # SỬA: x₀ -> x0, t₀ -> t0
     return lambda t: (x0**(1.0/3.0) + c * (np.asarray(t) - t0) / 3.0)**3
 
 def get_model3_ode(r, n_initial):
     return lambda t, y: -r * y * (n_initial + 1.0 - y)
 
-def get_model3_exact(n_initial, r, t0):
+def get_model3_exact(n_initial, r, t0): # SỬA: t₀ -> t0
     if n_initial <= 0:
         return lambda t: np.zeros_like(np.asarray(t))
     return lambda t: (n_initial * (n_initial + 1.0) * np.exp(-r * (n_initial + 1.0) * (np.asarray(t) - t0))) / \
@@ -1627,16 +1627,12 @@ def get_model3_exact(n_initial, r, t0):
 def get_model4_ode(alpha, beta, m, G, l):
     return lambda t, u1, u2: np.array([u2, m * l * G - alpha * u2 - beta * u1])
 
-def get_model4_exact(alpha, beta, m, G, l, n, k, t0):
+def get_model4_exact(alpha, beta, m, G, l, n, k, t0): # SỬA: t₀ -> t0
     return lambda t_arr: _model4_exact_solution(alpha, beta, m, G, l, n, k, t0, t_arr)
 
 def get_model5_ode(u_param, v_param):
     return lambda t, x, y: _model5_ode_system(t, x, y, u_param, v_param)
 
-def get_model6_ode(k1, k2):
-    """Tạo hàm ODE cho hệ phương trình của Model 6."""
-    # u1 là y_A, u2 là y_B
-    return lambda t, u1, u2: _model6_exact_solution(k1, k2, y_A0, y_B0, y_C0, t0, t_arr)
 # ==============================================
 #           Models Data
 # ==============================================
@@ -1784,7 +1780,7 @@ MODELS_DATA = {
         "description_key": "model1_desc",
         "param_keys_vi": [LANG_VI["model1_param1"], LANG_VI["model1_param2"], LANG_VI["model1_param3"], LANG_VI["model1_param4"]],
         "param_keys_en": [LANG_EN["model1_param1"], LANG_EN["model1_param2"], LANG_EN["model1_param3"], LANG_EN["model1_param4"]],
-        "internal_param_keys": ["O₀", "k", "t₀", "t₁"],
+        "internal_param_keys": ["O0", "k", "t0", "t1"], # SỬA: O₀ -> O0, t₀ -> t0, t₁ -> t1
         "ode_func": get_model1_ode,
         "exact_func": get_model1_exact,
     },
@@ -1794,52 +1790,50 @@ MODELS_DATA = {
         "description_key": "model2_desc",
         "param_keys_vi": [LANG_VI["model2_param1"], LANG_VI["model2_param3"], LANG_VI["model2_param4"]],
         "param_keys_en": [LANG_EN["model2_param1"], LANG_EN["model2_param3"], LANG_EN["model2_param4"]],
-        "internal_param_keys": ["x₀", "t₀", "t₁"],
+        "internal_param_keys": ["x0", "t0", "t1"], # SỬA: x₀ -> x0, t₀ -> t0, t₁ -> t1
         "ode_func": get_model2_ode,
         "exact_func": get_model2_exact,
     },
     LANG_VI["model3_name"]: {
-        "id": "model3", 
+        "id": "model3",
         "can_run_abm_on_screen3": True,
         "equation_key": "model3_eq",
         "description_key": "model3_desc",
         "param_keys_vi": [LANG_VI["model3_param2"], LANG_VI["model3_param4"], LANG_VI["model3_param5"]],
         "param_keys_en": [LANG_EN["model3_param2"], LANG_EN["model3_param4"], LANG_EN["model3_param5"]],
-        "internal_param_keys": ["n", "t₀", "t₁"], 
+        "internal_param_keys": ["n", "t0", "t1"], # SỬA: t₀ -> t0, t₁ -> t1
         "ode_func": get_model3_ode,
         "exact_func": get_model3_exact,
         "abm_defaults": {
-            "initial_infected": 1, "room_dimension": ABM_ROOM_DIMENSION_DEFAULT, 
-            "r_to_ptrans_factor": 5000, "ptrans_min": ABM_PTRANS_MIN, 
+            "initial_infected": 1, "room_dimension": ABM_ROOM_DIMENSION_DEFAULT,
+            "r_to_ptrans_factor": 5000, "ptrans_min": ABM_PTRANS_MIN,
             "ptrans_max": ABM_PTRANS_MAX, "base_agent_speed": 0.04,
             "speed_scaling_factor": 0.5, "min_agent_speed": 0.02,
             "max_agent_speed": 0.20, "base_contact_radius": 0.5,
             "radius_scaling_factor": 3.0, "min_contact_radius": 0.3,
             "max_contact_radius": 1.5, "seconds_per_step": 0.1,
-            "max_steps": ABM_MAX_STEPS_DEFAULT, "interval_ms": ABM_INTERVAL_DEFAULT, 
-            "display_max_total": MAX_TOTAL_AGENTS_FOR_FULL_DISPLAY, 
-            "display_sample_size": SAMPLE_SIZE_FOR_LARGE_POPULATION 
+            "max_steps": ABM_MAX_STEPS_DEFAULT, "interval_ms": ABM_INTERVAL_DEFAULT,
+            "display_max_total": MAX_TOTAL_AGENTS_FOR_FULL_DISPLAY,
+            "display_sample_size": SAMPLE_SIZE_FOR_LARGE_POPULATION
         }
     },
     LANG_VI["model4_name"]: {
         "id": "model4", "is_system": True,
         "equation_key": "model4_eq", "description_key": "model4_desc",
-        "internal_param_keys": ["m", "l", "a", "s", "G", "Y0", "dY0", "t₀", "t₁"], 
+        "internal_param_keys": ["m", "l", "a", "s", "G", "Y0", "dY0", "t0", "t1"], # SỬA: t₀ -> t0, t₁ -> t1
         "ode_func": get_model4_ode,
         "exact_func": get_model4_exact,
     },
     LANG_VI["model5_name"]: {
-        "id": "model5", "is_system": True, "uses_rk5_reference": True,      
+        "id": "model5", "is_system": True, "uses_rk5_reference": True,
         "equation_key": "model5_eq", "description_key": "model5_desc",
-		# --- THÊM 2 DÒNG NÀY ---
-        "ode_label_key": "model6_ode_system_label", # Key ngôn ngữ riêng cho tiêu đề
-        "hide_exact_solution_display": True, # Cờ để ẩn nghiệm giải tích
-        # --- KẾT THÚC THÊM ---
-        "internal_param_keys": ["x0", "y0", "u", "v", "t₀", "t₁"], 
+        "ode_label_key": "model6_ode_system_label",
+        "hide_exact_solution_display": True,
+        "internal_param_keys": ["x0", "y0", "u", "v", "t0", "t1"], # SỬA: t₀ -> t0, t₁ -> t1
         "ode_func": get_model5_ode,
         "exact_func": None,
     },
-	LANG_VI["model6_name"]: {
+    LANG_VI["model6_name"]: {
         "id": "model6",
         "is_system": True,
         "uses_rk5_reference": False,
@@ -1858,14 +1852,9 @@ MODELS_DATA = {
             LANG_EN["model6_param_k1"], LANG_EN["model6_param_k2"],
             LANG_EN["model6_param_t0"], LANG_EN["model6_param_t1"],
         ],
-        # SỬA LỖI: Dùng t0 và t1 thông thường
         "internal_param_keys": ["y_A0", "y_B0", "y_C0", "k1", "k2", "t0", "t1"],
-        
-        "ode_func": lambda k1, k2: _model6_get_ode_func(k1, k2),
-        
-        # SỬA LỖI: Dùng t0 thông thường
-        "exact_func": lambda k1, k2, y_A0, y_B0, y_C0, t0: _model6_get_exact_func(k1, k2, y_A0, y_B0, y_C0, t0),
-        
+        "ode_func": _model6_get_ode_func,
+        "exact_func": _model6_get_exact_func,
         "components": {
             "A": "model6_component_A",
             "B": "model6_component_B",
@@ -1873,7 +1862,6 @@ MODELS_DATA = {
         }
     },
 }
-
 #Solve model 4
 def _model4_exact_solution(alpha, beta, m, G, l, n, k, t0, t_arr):
     t_rel = np.asarray(t_arr) - t0 
@@ -2822,7 +2810,13 @@ def show_simulation_page():
             param_labels_key = f"param_keys_{st.session_state.lang}"
             all_param_labels = model_data.get(param_labels_key, model_data.get("param_keys_vi", []))
             internal_keys = model_data.get("internal_param_keys", [])
-            default_values = {'t₀': 0.0, 't₁': 10.0, 'O₀': 1.0, 'k': 0.5, 'x₀': 1.0, 'n': 10.0, 'm': 0.5, 'l': 0.2, 'a': 0.1, 's': 0.25, 'G': 20.0, 'Y0': 100.0, 'dY0': 1.0, 'x0': 10.0, 'y0': 0.0, 'u': 1.0, 'v': 2.0}
+            default_values = {
+                't0': 0.0, 't1': 10.0, 'O0': 1.0, 'k': 0.5, 'x0': 1.0, 
+                'n': 10.0, 'm': 0.5, 'l': 0.2, 'a': 0.1, 's': 0.25, 
+                'G': 20.0, 'Y0': 100.0, 'dY0': 1.0, 'y0': 0.0, 
+                'u': 1.0, 'v': 2.0,
+                'y_A0': 1.0, 'y_B0': 0.0, 'y_C0': 0.0, 'k1': 1.0, 'k2': 0.5
+            }
 
             if model_id == "model4":
                 cols_m4 = st.columns(2)
