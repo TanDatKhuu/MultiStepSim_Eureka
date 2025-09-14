@@ -3157,7 +3157,6 @@ def show_simulation_page():
             results_json,
             st.session_state.lang, 
             validated_params['model_id'], 
-            validated_params['method_short'], 
             validated_params.get('selected_component', 'x')
         )
         
