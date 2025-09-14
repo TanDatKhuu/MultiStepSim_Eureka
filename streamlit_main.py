@@ -2975,11 +2975,12 @@ def show_simulation_page():
         
         # (Hàm generate_and_get_figures và các tab còn lại giữ nguyên)
         @st.cache_data
-        def generate_and_get_figures(results_data_json, lang, model_id, component):
-            results_data = json.loads(results_data_json)
+        def generate_and_get_figures(results_data_json, lang_code, model_id, component):
+            
+			results_data = json.loads(results_data_json)
 		    
             figs = {}
-            translations = load_language_file(lang)
+            translations = load_language_file(lang_code)
             def _tr(key): return translations.get(key, key)
 		
 		    # --- 1. Tạo danh sách tất cả các lần chạy và gán màu ---
@@ -3092,7 +3093,7 @@ def show_simulation_page():
         results_json = json.dumps(results, cls=NumpyEncoder)
         figures = generate_and_get_figures(
             results_json,
-            st.session_state.lang, 
+            st.session_state.lang_code, 
             validated_params['model_id'], 
             validated_params.get('selected_component', 'x')
         )
