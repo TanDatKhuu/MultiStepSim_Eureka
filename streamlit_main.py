@@ -3735,8 +3735,12 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                     pursuer_path, evader_path = state_hist[:, 0:2], state_hist[:, 2:4]
                     ax.plot(pursuer_path[:, 0], pursuer_path[:, 1], 'r-', label=_tr('screen3_legend_m5s2_path_destroyer'))
                     ax.plot(evader_path[:, 0], evader_path[:, 1], 'b--', label=_tr('screen3_legend_m5s2_path_submarine'))
-                    ax.plot(pursuer_path[frame_idx, 0], pursuer_path[frame_idx, 1], 'rP', markersize=12, label=_tr('screen3_legend_m5s2_destroyer'))
-                    ax.plot(evader_path[frame_idx, 0], evader_path[frame_idx, 1], 'bo', markersize=8, label=_tr('screen3_legend_m5s2_submarine'))
+                    ax.plot(pursuer_path[frame_idx, 0], pursuer_path[frame_idx, 1], 
+                            marker='*', color='red', markeredgecolor='black', markersize=10, 
+                            label=_tr('screen3_legend_m5s2_destroyer')) # Tàu khu trục (pursuer) màu đỏ
+                    ax.plot(evader_path[frame_idx, 0], evader_path[frame_idx, 1], 
+                            marker='*', color='gold', markeredgecolor='black', markersize=10, 
+                            label=_tr('screen3_legend_m5s2_submarine')) # Tàu ngầm (target) màu vàng
                     if is_caught and t_points[frame_idx] >= catch_time:
                         catch_frame_idx_arr = np.where(t_points >= catch_time)[0]
                         if len(catch_frame_idx_arr) > 0:
@@ -3745,7 +3749,8 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                             ax.plot(catch_point[0], catch_point[1], 'gX', markersize=15, label=_tr('screen3_legend_m5s2_catch_point'))
                     ax.set_xlabel(_tr("screen3_model5_plot_xlabel_sim2")); ax.set_ylabel(_tr("screen3_model5_plot_ylabel_sim2"))
                     ax.grid(True); ax.legend(); ax.set_aspect('equal')
-                    ax.set_title(_tr("screen3_model5_plot_title_sim2") + f"\nTime: {t_points[frame_idx]:.2f}s")
+                    time_label = _tr("screen3_result_time").replace(":", "") # Lấy "Thời gian mô phỏng (t)" và bỏ dấu :
+                    ax.set_title(f"{_tr('screen3_model5_plot_title_sim2')}\n{time_label}: {t_points[frame_idx]:.2f}s")
                     if is_caught and t_points[frame_idx] >= catch_time: break
                 
                 # --- Ghi frame vào GIF ---
