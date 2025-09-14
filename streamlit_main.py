@@ -2794,24 +2794,68 @@ def show_simulation_page():
         with st.form(key='simulation_form'):
             # ... (giữ nguyên toàn bộ phần form giống code của bạn)
             st.header(tr('screen2_method_group'))
-            method_options = {tr('screen2_method_ab'): "Bashforth", tr('screen2_method_am'): "Moulton"}
-            selected_method_display = st.radio("method_select", list(method_options.keys()), label_visibility="collapsed", horizontal=True)
-            selected_method_short = method_options[selected_method_display]
-            
-            details_title = tr('screen2_details_group_ab') if selected_method_short == 'Bashforth' else tr('screen2_details_group_am')
-            st.header(details_title)
+            # 1. Checkbox chọn các phương pháp chính
+            cols_methods = st.columns(3)
+            with cols_methods[0]:
+                select_ab = st.checkbox(tr('screen2_method_ab'), value=True, key='cb_ab')
+            with cols_methods[1]:
+                select_am = st.checkbox(tr('screen2_method_am'), value=True, key='cb_am')
+            with cols_methods[2]:
+                select_rk = st.checkbox(tr('screen2_method_rk'), value=False, key='cb_rk')
 
+            st.divider()
+            
+            # 2. Multiselect cho Adams Methods
+            st.subheader(tr('screen2_details_group_ab')) # Dùng chung title cho cả AB/AM
+            
             step_options = {tr('screen2_step2'): 2, tr('screen2_step3'): 3, tr('screen2_step4'): 4}
-            if selected_method_short == 'Bashforth' and model_id != "model5":
+            # Chỉ thêm tùy chọn 5 bước nếu không phải Model 5
+            if model_id != "model5":
                 step_options[tr('screen2_step5')] = 5
             
+            all_step_keys = list(step_options.keys())
+            
+            # Nút chọn tất cả cho Steps
+            select_all_steps = st.checkbox(tr('screen2_select_all_steps_cb'), value=False, key='cb_all_steps')
+            if select_all_steps:
+                default_steps = all_step_keys
+            else:
+                # Mặc định chọn 4 bước nếu có, nếu không thì chọn bước đầu tiên
+                default_steps = [tr('screen2_step4')] if tr('screen2_step4') in all_step_keys else [all_step_keys[0]]
+
             selected_steps_display = st.multiselect(
-                tr('screen2_steps_label'), 
-                options=list(step_options.keys()), 
-                default=list(step_options.keys())[2] if len(step_options) > 2 else list(step_options.keys())[0]
+                tr('screen2_steps_label'),
+                options=all_step_keys,
+                default=default_steps,
+                key='ms_steps'
             )
             selected_steps_int = [step_options[s] for s in selected_steps_display]
             
+            st.divider()
+            
+            # 3. Multiselect cho Runge-Kutta
+            st.subheader(tr('screen2_details_group_rk'))
+            order_options = {tr('screen2_order2'): 2, tr('screen2_order3'): 3, tr('screen2_order4'): 4}
+            all_order_keys = list(order_options.keys())
+            
+            # Nút chọn tất cả cho Orders
+            select_all_orders = st.checkbox(tr('screen2_select_all_steps_cb'), value=False, key='cb_all_orders')
+            if select_all_orders:
+                default_orders = all_order_keys
+            else:
+                default_orders = [tr('screen2_order4')] # Mặc định chọn bậc 4
+
+            selected_orders_display = st.multiselect(
+                tr('screen2_order_label'),
+                options=all_order_keys,
+                default=default_orders,
+                key='ms_orders'
+            )
+            selected_orders_int = [order_options[o] for o in selected_orders_display]
+
+            st.divider()
+
+            # 4. Chọn bước nhảy h (giữ nguyên)
             h_values = ["0.1", "0.05", "0.01", "0.005", "0.001"]
             selected_h_str = st.radio(tr('screen2_h_label'), options=h_values, index=2, horizontal=True)
             
@@ -2869,39 +2913,94 @@ def show_simulation_page():
     st.subheader(model_name_tr)
 
     if submitted:
-        # ... (giữ nguyên logic xử lý form submit giống code của bạn)
         with st.spinner(tr('screen2_info_area_running')):
-            is_valid = True
-            if not selected_steps_int:
-                st.toast(tr('msg_select_step'), icon='⚠️')
-                is_valid = False
-            if 't₀' in param_inputs and 't₁' in param_inputs and param_inputs['t₁'] <= param_inputs['t₀']:
-                st.toast(tr('msg_t_end_error'), icon='⚠️')
-                is_valid = False
+            # --- 1. Lấy lựa chọn của người dùng ---
+            selected_methods = []
+            if st.session_state.cb_ab: selected_methods.append("Bashforth")
+            if st.session_state.cb_am: selected_methods.append("Moulton")
+            if st.session_state.cb_rk: selected_methods.append("RungeKutta")
+
+            # --- 2. Xây dựng danh sách công việc (tasks_to_run) ---
+            tasks_to_run = { "Bashforth": [], "Moulton": [], "RungeKutta": [] }
             
-            if is_valid:
+            # Lấy các bước/bậc từ multiselect
+            # selected_steps_int và selected_orders_int đã được tính ở trên
+            
+            if "Bashforth" in selected_methods:
+                tasks_to_run["Bashforth"] = selected_steps_int.copy()
+
+            if "Moulton" in selected_methods:
+                # AM chỉ chạy đến 4 bước
+                tasks_to_run["Moulton"] = [s for s in selected_steps_int if s in [2, 3, 4]]
+                if 5 in selected_steps_int and 4 not in tasks_to_run["Moulton"]:
+                    tasks_to_run["Moulton"].append(4) # Tự động thêm bậc 4 nếu chọn 5
+
+            if "RungeKutta" in selected_methods:
+                # Nếu có Adams được chọn, RK chạy theo các bậc tương ứng
+                if "Bashforth" in selected_methods or "Moulton" in selected_methods:
+                    for step in selected_steps_int:
+                        if step in [2, 3, 4]:
+                            tasks_to_run["RungeKutta"].append(step)
+                    if 5 in selected_steps_int and 4 not in tasks_to_run["RungeKutta"]:
+                        tasks_to_run["RungeKutta"].append(4)
+                else: # Nếu chỉ có RK được chọn
+                    tasks_to_run["RungeKutta"] = selected_orders_int.copy()
+            
+            # Loại bỏ các tác vụ rỗng
+            tasks_to_run = {m: steps for m, steps in tasks_to_run.items() if steps}
+
+            # --- 3. Validate đầu vào ---
+            is_valid = True
+            error_messages = []
+            if not tasks_to_run:
+                error_messages.append(tr('msg_select_method'))
+                is_valid = False
+            if 't0' in param_inputs and 't1' in param_inputs and param_inputs['t1'] <= param_inputs['t0']:
+                error_messages.append(tr('msg_t_end_error'))
+                is_valid = False
+
+            if not is_valid:
+                for msg in error_messages:
+                    st.toast(msg, icon='⚠️')
+            else:
+                # --- 4. Chạy mô phỏng (logic mới) ---
                 for key in ['last_calculated_c', 'last_calculated_r', 'last_calculated_alpha', 'last_calculated_beta']:
                     if key in st.session_state:
                         del st.session_state[key]
                 
-                prep_ok, prep_data, calculated_params = _prepare_simulation_functions(model_data, param_inputs, selected_method_short)
+                # Hàm _prepare_simulation_functions cần `selected_method_short`, ta sẽ truyền "Bashforth" làm mặc định
+                # vì logic tính 'c' của nó phức tạp hơn.
+                prep_ok, prep_data, calculated_params = _prepare_simulation_functions(model_data, param_inputs, "Bashforth")
                 
                 if prep_ok:
                     for key, value in calculated_params.items():
                         st.session_state[f'last_calculated_{key}'] = value
                     
                     ode_func, exact_callable, y0, t_start, t_end = prep_data
+                    
+                    # Dictionary lớn để chứa tất cả kết quả
                     results_dict = {}
-                    for steps in selected_steps_int:
-                        res = _perform_single_simulation(model_data, ode_func, exact_callable, y0, t_start, t_end, selected_method_short, steps, float(selected_h_str), selected_component)
-                        if res:
-                            results_dict[steps] = res
+
+                    for method_short, steps_list in tasks_to_run.items():
+                        results_dict[method_short] = {}
+                        for steps in sorted(list(set(steps_list))):
+                            res = _perform_single_simulation(
+                                model_data, ode_func, exact_callable, y0, t_start, t_end, 
+                                method_short, steps, float(selected_h_str), selected_component
+                            )
+                            if res:
+                                results_dict[method_short][steps] = res
+                    
+                    # Xóa các phương pháp không có kết quả
+                    results_dict = {m: sr for m, sr in results_dict.items() if sr}
                     
                     st.session_state.simulation_results = results_dict
                     st.session_state.validated_params = {
-                        'params': param_inputs, 'method_short': selected_method_short, 
-                        'h_target': float(selected_h_str), 'model_id': model_id,
-                        'selected_steps_int': selected_steps_int, 'selected_component': selected_component
+                        'params': param_inputs, 
+                        'h_target': float(selected_h_str), 
+                        'model_id': model_id,
+                        'selected_component': selected_component,
+                        'tasks_run': tasks_to_run # Lưu lại các task đã chạy
                     }
                     st.rerun()
                 else:
@@ -2939,85 +3038,112 @@ def show_simulation_page():
         ])
 
         @st.cache_data
-        def generate_and_get_figures(results_data_json, lang, model_id, method_short, component):
-            results_data = json.loads(results_data_json)
-            
-            figs = {}
-            translations = load_language_file(lang)
-            def _tr(key): return translations.get(key, key)
-            
-            n_steps = len(results_data)
-            if n_steps == 0:
-                return {'solution': Figure(), 'error': Figure(), 'order': Figure()}
-                
-            colors = plt.cm.viridis(np.linspace(0, 1, max(1, n_steps)))
-            plot_figsize = (7, 5)
-            method_prefix = "AB" if method_short == "Bashforth" else "AM"
-
-            # Đồ thị nghiệm
-            fig_sol = Figure(figsize=plot_figsize)
-            ax_sol = fig_sol.subplots()
-            exact_plotted = False
-            color_idx = 0
-            for step_str, res in sorted(results_data.items()):
-                step = int(step_str) # JSON keys are strings
-                method_label = f"{method_prefix}{step}"
-                if res.get('t_plot') is not None and res.get('approx_sol_plot') is not None and len(res['t_plot']) > 0:
-                    if not exact_plotted and res.get('exact_sol_plot') is not None and len(res['exact_sol_plot']) > 0:
-                        ax_sol.plot(res['t_plot'], res['exact_sol_plot'], color='black', ls='--', label=_tr('screen2_plot_exact_label'))
-                        exact_plotted = True
-                    ax_sol.plot(res['t_plot'], res['approx_sol_plot'], color=colors[color_idx % len(colors)], label=method_label)
-                color_idx += 1
-            ax_sol.set_title(_tr('screen2_plot_solution_title'))
-            ax_sol.set_xlabel(_tr('screen2_plot_t_axis'))
-            ax_sol.set_ylabel(_tr('screen2_plot_value_axis') + (f" ({component.upper()})" if model_id == 'model5' else ""))
-            ax_sol.grid(True, linestyle=':'); ax_sol.legend()
-            fig_sol.tight_layout()
-            figs['solution'] = fig_sol
-            
-            # Đồ thị sai số
-            fig_err = Figure(figsize=plot_figsize)
-            ax_err = fig_err.subplots()
-            color_idx = 0
-            for step_str, res in sorted(results_data.items()):
-                step = int(step_str)
-                method_label = f"{method_prefix}{step}"
-                if res.get('n_values_convergence') is not None and len(res['n_values_convergence']) > 0:
-                    ax_err.plot(res['n_values_convergence'], res['errors_convergence'], marker='.', ms=3, ls='-', color=colors[color_idx % len(colors)], label=method_label)
-                color_idx += 1
-            ax_err.set_title(_tr('screen2_plot_error_title'))
-            ax_err.set_xlabel(_tr('screen2_plot_n_axis'))
-            ax_err.set_ylabel(_tr('screen2_plot_error_axis'))
-            ax_err.set_yscale('log')
-            ax_err.grid(True, which='both', linestyle=':'); ax_err.legend()
-            fig_err.tight_layout()
-            figs['error'] = fig_err
-            
-            # Đồ thị bậc hội tụ
-            fig_ord = Figure(figsize=plot_figsize)
-            ax_ord = fig_ord.subplots()
-            color_idx = 0
-            for step_str, res in sorted(results_data.items()):
-                step = int(step_str)
-                method_label = f"{method_prefix}{step}"
-                log_h, log_err = res.get('log_h_convergence'), res.get('log_error_convergence')
-                if log_h is not None and len(log_h) >= 2:
-                    slope = res.get('order_slope', 0)
-                    fit_label_text = _tr('screen2_plot_order_fit_label_suffix').format(slope)
-                    fit_label_mathtext = fit_label_text.replace("O(h<sup>", "$O(h^{").replace("</sup>)", "})$")
-                    ax_ord.plot(log_h, log_err, 'o', ms=3, color=colors[color_idx % len(colors)], label=f"{method_label} {_tr('screen2_plot_order_data_label_suffix')}")
-                    if np.isfinite(slope):
-                        fit_line = np.polyval(np.polyfit(log_h, log_err, 1), log_h)
-                        ax_ord.plot(log_h, fit_line, '-', color=colors[color_idx % len(colors)], label=fit_label_mathtext)
-                color_idx += 1
-            ax_ord.set_title(_tr('screen2_plot_order_title'))
-            ax_ord.set_xlabel(_tr('screen2_plot_log_h_axis'))
-            ax_ord.set_ylabel(_tr('screen2_plot_log_error_axis'))
-            ax_ord.grid(True, linestyle=':'); ax_ord.legend()
-            fig_ord.tight_layout()
-            figs['order'] = fig_ord
-            
-            return figs
+        def generate_and_get_figures(results_data_json, lang, model_id, component):
+		    results_data = json.loads(results_data_json)
+		    
+		    figs = {}
+		    translations = load_language_file(lang)
+		    def _tr(key): return translations.get(key, key)
+		
+		    # --- 1. Tạo danh sách tất cả các lần chạy và gán màu ---
+		    all_runs = []
+		    for method_short, step_results in results_data.items():
+		        for step_str, res in step_results.items():
+		            if res:
+		                label = ""
+		                step_or_order = int(step_str)
+		                if method_short == "RungeKutta":
+		                    label = f"RK{step_or_order}"
+		                else:
+		                    label = f"A{method_short[0]}{step_or_order}"
+		
+		                all_runs.append({
+		                    'method': method_short,
+		                    'step_or_order': step_or_order,
+		                    'result': res,
+		                    'label': label
+		                })
+		
+		    if not all_runs:
+		        return {'solution': Figure(), 'error': Figure(), 'order': Figure()}
+		    
+		    all_runs.sort(key=lambda x: (x['method'], x['step_or_order']))
+		    num_runs = len(all_runs)
+		    colors = plt.cm.turbo(np.linspace(0, 1, num_runs)) if num_runs > 1 else ['#1f77b4']
+		
+		    # --- 2. Lấy thông tin chung ---
+		    sol_ylabel_text = _tr('screen2_plot_value_axis')
+		    if model_id == "model5":
+		        sol_ylabel_text += f" ({component.upper()})"
+		    elif model_id == "model6":
+		        lang_key = MODELS_DATA[LANG_VI["model6_name"]]["components"].get(component, "")
+		        sol_ylabel_text = _tr(lang_key)
+		
+		    exact_label_key = "screen2_plot_ref_sol_label" if model_id == "model5" else "screen2_plot_exact_sol_label"
+		
+		    # --- 3. Vẽ các đồ thị ---
+		    plot_figsize = (7, 5)
+		
+		    # Đồ thị nghiệm
+		    fig_sol = Figure(figsize=plot_figsize)
+		    ax_sol = fig_sol.subplots()
+		    exact_plotted = False
+		    for i, run in enumerate(all_runs):
+		        res, color, label = run['result'], colors[i], run['label']
+		        t, ap, ex = res.get('t_plot'), res.get('approx_sol_plot'), res.get('exact_sol_plot')
+		        if not exact_plotted and ex is not None and t is not None and len(t) > 0:
+		            ax_sol.plot(t, ex, color='black', ls='--', label=_tr(exact_label_key))
+		            exact_plotted = True
+		        if t is not None and ap is not None and len(t) > 0:
+		            ax_sol.plot(t, ap, color=color, label=label)
+		
+		    ax_sol.set_title(_tr('screen2_plot_solution_title'))
+		    ax_sol.set_xlabel(_tr('screen2_plot_t_axis'))
+		    ax_sol.set_ylabel(sol_ylabel_text)
+		    ax_sol.grid(True, linestyle=':'); ax_sol.legend(fontsize='small')
+		    fig_sol.tight_layout()
+		    figs['solution'] = fig_sol
+		    
+		    # Đồ thị sai số
+		    fig_err = Figure(figsize=plot_figsize)
+		    ax_err = fig_err.subplots()
+		    for i, run in enumerate(all_runs):
+		        res, color, label = run['result'], colors[i], run['label']
+		        n_vals, err = res.get('n_values_convergence'), res.get('errors_convergence')
+		        if n_vals is not None and len(n_vals) > 0:
+		            ax_err.plot(n_vals, err, marker='.', ms=3, ls='-', color=color, label=label)
+		            
+		    ax_err.set_title(_tr('screen2_plot_error_title'))
+		    ax_err.set_xlabel(_tr('screen2_plot_n_axis'))
+		    ax_err.set_ylabel(_tr('screen2_plot_error_axis'))
+		    ax_err.set_yscale('log')
+		    ax_err.grid(True, which='both', linestyle=':'); ax_err.legend(fontsize='small')
+		    fig_err.tight_layout()
+		    figs['error'] = fig_err
+		    
+		    # Đồ thị bậc hội tụ
+		    fig_ord = Figure(figsize=plot_figsize)
+		    ax_ord = fig_ord.subplots()
+		    for i, run in enumerate(all_runs):
+		        res, color, label = run['result'], colors[i], run['label']
+		        log_h, log_err = res.get('log_h_convergence'), res.get('log_error_convergence')
+		        if log_h is not None and len(log_h) >= 2:
+		            slope = res.get('order_slope', 0)
+		            fit_label_text = _tr('screen2_plot_order_fit_label_suffix').format(slope)
+		            fit_label_mathtext = fit_label_text.replace("O(h<sup>", "$O(h^{").replace("</sup>)", "})$")
+		            ax_ord.plot(log_h, log_err, 'o', ms=3, color=color, label=f"{label} {_tr('screen2_plot_order_data_label_suffix')}")
+		            if np.isfinite(slope):
+		                fit_line = np.polyval(np.polyfit(log_h, log_err, 1), log_h)
+		                ax_ord.plot(log_h, fit_line, '-', color=color, label=fit_label_mathtext)
+		                
+		    ax_ord.set_title(_tr('screen2_plot_order_title'))
+		    ax_ord.set_xlabel(_tr('screen2_plot_log_h_axis'))
+		    ax_ord.set_ylabel(_tr('screen2_plot_log_error_axis'))
+		    ax_ord.grid(True, linestyle=':'); ax_ord.legend(fontsize='small')
+		    fig_ord.tight_layout()
+		    figs['order'] = fig_ord
+		    
+		    return figs
 
         results_json = json.dumps(results, cls=NumpyEncoder)
         figures = generate_and_get_figures(
