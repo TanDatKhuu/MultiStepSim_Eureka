@@ -86,6 +86,8 @@
 	"model6_component_A": "Concentration A ($y_A$)",
 	"model6_component_B": "Concentration B ($y_B$)",
 	"model6_component_C": "Concentration C ($y_C$)",
+	"screen2_plot_exact_sol_label": "Exact Solution",
+    "screen2_plot_ref_sol_label": "Reference Solution (RK5)",
 	"screen2_details_group_rk": "2. Runge-Kutta Details",
     "screen2_order_label": "Order:",
     "screen2_select_all_steps_cb": "All",
