@@ -115,6 +115,7 @@
 	"screen2_step5": "5-step",
 	"param_placeholder": "Enter numeric value...",
 	"screen2_h_label": "Step size (h):",
+	"time_unit_seconds": "(Time unit)",
 	"screen2_sim_toggle": "Show separate dynamic simulation window",
 	"screen2_params_group": "3. Model input parameters",
 	"screen2_actions_group": "4. Execute and save",
