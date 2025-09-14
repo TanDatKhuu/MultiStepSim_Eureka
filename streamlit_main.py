@@ -3262,13 +3262,32 @@ def run_and_prepare_m5s1_animation_data(_validated_params_json):
     
     # Chuẩn bị dữ liệu đồ họa
     d_val = x0
-    x_min, x_max = np.min(z_array_actual[:, 0]), np.max(z_array_actual[:, 0])
-    y_min, y_max = np.min(z_array_actual[:, 1]), np.max(z_array_actual[:, 1])
-    padding_x = 0.1 * d_val
-    y_range_for_padding = max(abs(y_max - y_min), 0.5 * d_val)
-    padding_y_abs = 0.2 * y_range_for_padding
-    xlim = (min(x_min - padding_x, -padding_x), max(x_max + padding_x, d_val + padding_x))
-    ylim = (min(y_min - padding_y_abs, y0 - padding_y_abs), max(y_max + padding_y_abs, y0 + padding_y_abs))
+    x_traj_min, x_traj_max = np.min(z_array_actual[:, 0]), np.max(z_array_actual[:, 0])
+    y_traj_min, y_traj_max = np.min(z_array_actual[:, 1]), np.max(z_array_actual[:, 1])
+
+    padding_x_standalone = 0.1 * d_val
+    y_range_for_padding_standalone = max(abs(y_traj_max - y_traj_min), 0.5 * d_val)
+    padding_y_abs_standalone = 0.2 * y_range_for_padding_standalone
+
+    xlim_min_standalone = min(x_traj_min - padding_x_standalone, -padding_x_standalone)
+    xlim_max_standalone = max(x_traj_max + padding_x_standalone, d_val + padding_x_standalone)
+
+    ylim_min_calc = min(y_traj_min - padding_y_abs_standalone, y0 - padding_y_abs_standalone)
+    ylim_max_calc = max(y_traj_max + padding_y_abs_standalone, y0 + padding_y_abs_standalone)
+    
+    # Logic điều chỉnh thêm cho ylim từ PySide6
+    if ylim_min_calc >= -1.0:
+        ylim_min_standalone = min(ylim_min_calc, -max(2.0, padding_y_abs_standalone))
+    else:
+        ylim_min_standalone = ylim_min_calc
+    
+    if ylim_max_calc <= 1.0:
+        ylim_max_standalone = max(ylim_max_calc, max(2.0, padding_y_abs_standalone))
+    else:
+        ylim_max_standalone = ylim_max_calc
+
+    xlim = (xlim_min_standalone, xlim_max_standalone)
+    ylim = (ylim_min_standalone, ylim_max_standalone)
     
     arrow_data = None
     if u != 0:
