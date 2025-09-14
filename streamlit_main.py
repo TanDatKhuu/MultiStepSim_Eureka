@@ -2832,7 +2832,7 @@ def show_simulation_page():
             # 2. Khu vực chi tiết cho Adams-Moulton
             if select_am:
                 # Dùng subheader khác để phân biệt, có thể thêm vào file ngôn ngữ
-                st.subheader(tr('screen2_details_group_am', "2. Chi tiết Adams-Moulton")) 
+                st.subheader(tr('screen2_details_group_am')) 
                 # AM chỉ hỗ trợ đến 4 bước
                 step_options_am = {tr('screen2_step2'): 2, tr('screen2_step3'): 3, tr('screen2_step4'): 4}
                 
