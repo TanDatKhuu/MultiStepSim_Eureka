@@ -3038,27 +3038,27 @@ def show_simulation_page():
         ])
 
         @st.cache_data
-		def generate_and_get_figures(results_data_json, lang, model_id, component):
-		    results_data = json.loads(results_data_json)
+        def generate_and_get_figures(results_data_json, lang, model_id, component):
+            results_data = json.loads(results_data_json)
 		    
-		    figs = {}
-		    translations = load_language_file(lang)
-		    def _tr(key): return translations.get(key, key)
+            figs = {}
+            translations = load_language_file(lang)
+            def _tr(key): return translations.get(key, key)
 		
 		    # --- 1. Tạo danh sách tất cả các lần chạy và gán màu ---
-		    all_runs = []
-		    for method_short, step_results in results_data.items():
-		        for step_str, res in step_results.items():
-		            if res:
-		                label = ""
-		                step_or_order = int(step_str)
+            all_runs = []
+            for method_short, step_results in results_data.items():
+                for step_str, res in step_results.items():
+                    if res:
+                        label = ""
+                        step_or_order = int(step_str)
 		                # Sửa logic để thêm RK vào label
-		                if method_short == "RungeKutta":
-		                    label = f"RK{step_or_order}"
-		                else:
-		                    label = f"A{method_short[0]}{step_or_order}"
+                        if method_short == "RungeKutta":
+                            label = f"RK{step_or_order}"
+                        else:
+                            label = f"A{method_short[0]}{step_or_order}"
 		
-		                all_runs.append({
+                        all_runs.append({
 		                    'method': method_short,
 		                    'step_or_order': step_or_order,
 		                    'result': res,
