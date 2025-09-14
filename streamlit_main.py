@@ -3092,7 +3092,7 @@ def show_simulation_page():
         results_json = json.dumps(results, cls=NumpyEncoder)
         figures = generate_and_get_figures(
             results_json,
-            st.session_state.lang_code, 
+            st.session_state.lang, 
             validated_params['model_id'], 
             validated_params.get('selected_component', 'x')
         )
