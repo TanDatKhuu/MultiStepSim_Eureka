@@ -2534,7 +2534,12 @@ def _prepare_simulation_functions(model_data, input_params, selected_method_shor
             u_param, v_param = input_params['u'], input_params['v']
             ode_func = ode_gen(u_param, v_param)
             exact_callable = None
-
+        elif model_id == "model6":
+            k1, k2 = input_params['k1'], input_params['k2']
+            yA0, yB0, yC0 = y0[0], y0[1], y0[2]
+            ode_func = ode_gen(k1, k2)
+            if callable(exact_gen):
+                exact_callable = exact_gen(k1, k2, yA0, yB0, yC0, t_start)
         if not callable(ode_func): raise RuntimeError(f"Lỗi: Hàm ODE không được tạo cho model '{model_id}'.")
         
         return True, (ode_func, exact_callable, y0, t_start, t_end), calculated_params
