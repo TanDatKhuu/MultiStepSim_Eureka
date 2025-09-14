@@ -1772,7 +1772,35 @@ class DiseaseSimulationABM:
             "infected_count": len(self.infected_coords),
             "total_population": self.n_total_population_initial
         }
-		
+def _model6_get_ode_func(k1, k2):
+    """Tạo hàm f(t, ya, yb, yc) cho Model 6."""
+    def f(t, ya, yb, yc):
+        da = -k1 * ya
+        db = k1 * ya - k2 * yb
+        dc = k2 * yb
+        return da, db, dc
+    return f
+
+def _model6_get_exact_func(k1, k2, yA0, yB0, yC0, t0): # SỬA t₀ thành t0 ở đây
+    """Tạo hàm trả về nghiệm giải tích (a(t), b(t), c(t)) cho Model 6."""
+    def exact_solution_at_t(t_arr):
+        t = np.asarray(t_arr) - t0 # Và ở đây
+        
+        yA = yA0 * np.exp(-k1 * t)
+        
+        if abs(k1 - k2) < 1e-15:
+            yB = (k1 * yA0 * t + yB0) * np.exp(-k1 * t)
+        else:
+            term1 = (k1 * yA0) / (k2 - k1)
+            term2 = np.exp(-k1 * t) - np.exp(-k2 * t)
+            yB = term1 * term2 + yB0 * np.exp(-k2 * t)
+
+        total_initial = yA0 + yB0 + yC0
+        yC = total_initial - yA - yB
+        
+        return yA, yB, yC
+    return exact_solution_at_t
+	
 MODELS_DATA = {
     LANG_VI["model1_name"]: {
         "id": "model1",
@@ -1920,35 +1948,6 @@ def _model5_ode_system(t, x, y, u, v):
     dxdt = -v * x / r
     dydt = -v * y / r - u
     return np.array([dxdt, dydt])
-
-def _model6_get_ode_func(k1, k2):
-    """Tạo hàm f(t, ya, yb, yc) cho Model 6."""
-    def f(t, ya, yb, yc):
-        da = -k1 * ya
-        db = k1 * ya - k2 * yb
-        dc = k2 * yb
-        return da, db, dc
-    return f
-
-def _model6_get_exact_func(k1, k2, yA0, yB0, yC0, t0): # SỬA t₀ thành t0 ở đây
-    """Tạo hàm trả về nghiệm giải tích (a(t), b(t), c(t)) cho Model 6."""
-    def exact_solution_at_t(t_arr):
-        t = np.asarray(t_arr) - t0 # Và ở đây
-        
-        yA = yA0 * np.exp(-k1 * t)
-        
-        if abs(k1 - k2) < 1e-15:
-            yB = (k1 * yA0 * t + yB0) * np.exp(-k1 * t)
-        else:
-            term1 = (k1 * yA0) / (k2 - k1)
-            term2 = np.exp(-k1 * t) - np.exp(-k2 * t)
-            yB = term1 * term2 + yB0 * np.exp(-k2 * t)
-
-        total_initial = yA0 + yB0 + yC0
-        yC = total_initial - yA - yB
-        
-        return yA, yB, yC
-    return exact_solution_at_t
 
 def _model6_rk2(f, exact_sol_func, t, y_A0, y_B0, y_C0):
     h = t[1] - t[0]; n = len(t)
