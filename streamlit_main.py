@@ -3134,8 +3134,10 @@ def show_simulation_page():
                 log_h, log_err = res.get('log_h_convergence'), res.get('log_error_convergence')
                 if log_h is not None and log_err is not None and len(log_h) >= 2 and len(log_err) >= 2:
                     slope = res.get('order_slope', 0)
-                    fit_label_text = _tr('screen2_plot_order_fit_label_suffix').format(slope)
-                    fit_label_mathtext = fit_label_text.replace("O(h<sup>", "$O(h^{").replace("</sup>)", "})$")
+                    # Tạo chuỗi Fit linh hoạt, không phụ thuộc vào key dịch
+                    fit_label_text = f"Fit: O(h^{slope:.2f})"
+                    # Chuyển đổi sang định dạng LaTeX cho Matplotlib
+                    fit_label_mathtext = f"$O(h^{{{slope:.2f}}})$"
                     ax_ord.plot(log_h, log_err, 'o', ms=3, color=color, label=f"{label} {_tr('screen2_plot_order_data_label_suffix')}")
                     if np.isfinite(slope):
                         try:
@@ -3167,27 +3169,32 @@ def show_simulation_page():
         with tab3:
             st.pyplot(figures['order'])
         with tab4:
-            # Lặp qua các phương pháp trong dictionary kết quả
-            for method_short, step_results in sorted(results.items()):
+            # Sắp xếp các phương pháp theo thứ tự mong muốn
+            method_order = ["Bashforth", "Moulton", "RungeKutta"]
+            sorted_methods = sorted(results.keys(), key=lambda x: method_order.index(x) if x in method_order else 99)
+            
+            for method_short in sorted_methods:
+                step_results = results[method_short]
+                
                 # Lấy tên hiển thị của phương pháp
                 method_key_map = {"Bashforth": "ab", "Moulton": "am", "RungeKutta": "rk"}
                 abbreviation = method_key_map.get(method_short, method_short.lower())
                 method_display_name = tr(f'screen2_method_{abbreviation}')
 
-                # Expander cho mỗi phương pháp
-                with st.expander(f"**{method_display_name}**"):
-                    # Lặp qua các bậc/số bước của phương pháp đó
-                    for step_str, res in sorted(step_results.items()):
-                        step = int(step_str)
-                        
-                        # Xây dựng tiêu đề cho từng lần chạy
-                        if method_short == "RungeKutta":
-                            run_title = f"{tr('screen2_order_label')} {step}"
-                        else:
-                            run_title = f"{tr('screen2_steps_label')} {step}"
+                # Hiển thị tiêu đề cho mỗi phương pháp
+                st.subheader(method_display_name)
 
-                        st.markdown(f"#### {run_title}")
-                        
+                # Lặp qua các bậc/số bước của phương pháp đó
+                for step_str, res in sorted(step_results.items()):
+                    step = int(step_str)
+                    
+                    if method_short == "RungeKutta":
+                        run_title = f"{tr('screen2_order_label')} {step}"
+                    else:
+                        run_title = f"{tr('screen2_steps_label')} {step}"
+
+                    # Dùng expander cho mỗi lần chạy (mỗi bậc/số bước)
+                    with st.expander(run_title):
                         slope_str = f"{res.get('order_slope', 'N/A'):.4f}" if isinstance(res.get('order_slope'), float) else "N/A"
                         st.markdown(f"**{tr('screen2_info_area_show_data_order')}** {slope_str}")
                         
@@ -3199,9 +3206,11 @@ def show_simulation_page():
                                 df_data[tr('screen2_info_area_show_data_error')] = np.abs(np.array(approx) - np.array(exact))
                             
                             df = pd.DataFrame(df_data)
-                            st.dataframe(df.head(20).style.format("{:.6f}"), use_container_width=True, height=400)
+                            st.dataframe(df.head(20).style.format("{:.6f}"), use_container_width=True, height=300)
                         else:
                             st.write(tr("screen2_info_area_show_data_no_points"))
+                
+                st.write("---") # Thêm đường kẻ ngăn cách giữa các phương pháp
             
 # ==============================================
 #           PHẦN 4: TRANG MÔ PHỎNG ĐỘNG
