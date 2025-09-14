@@ -2800,109 +2800,79 @@ def show_simulation_page():
         
         st.title(tr("sidebar_title"))
         
-        with st.form(key='simulation_form'):
-            # ... (giữ nguyên toàn bộ phần form giống code của bạn)
-            st.header(tr('screen2_method_group'))
-            # 1. Checkbox chọn các phương pháp chính - mỗi cái một dòng
-            select_ab = st.checkbox(tr('screen2_method_ab'), value=True, key='cb_ab')
-            select_am = st.checkbox(tr('screen2_method_am'), value=True, key='cb_am')
-            select_rk = st.checkbox(tr('screen2_method_rk'), value=False, key='cb_rk')
+        # --- PHẦN NHẬP LIỆU - ĐƯA RA NGOÀI FORM ---
+        st.header(tr('screen2_method_group'))
+        select_ab = st.checkbox(tr('screen2_method_ab'), value=True, key='cb_ab')
+        select_am = st.checkbox(tr('screen2_method_am'), value=True, key='cb_am')
+        select_rk = st.checkbox(tr('screen2_method_rk'), value=False, key='cb_rk')
+        st.divider()
 
-            st.divider()
-            
-            # 2. Multiselect cho Adams Methods
-            st.subheader(tr('screen2_details_group_ab'))
-            
-            step_options = {tr('screen2_step2'): 2, tr('screen2_step3'): 3, tr('screen2_step4'): 4}
-            if model_id != "model5":
-                step_options[tr('screen2_step5')] = 5
-            
-            all_step_keys = list(step_options.keys())
-            
-            # Nút chọn tất cả cho Steps
-            if st.checkbox(tr('screen2_select_all_steps_cb'), value=False, key='cb_all_steps'):
-                default_steps = all_step_keys
-            else:
-                default_steps = [tr('screen2_step4')] if tr('screen2_step4') in all_step_keys else [all_step_keys[0]]
+        st.subheader(tr('screen2_details_group_ab'))
+        step_options = {tr('screen2_step2'): 2, tr('screen2_step3'): 3, tr('screen2_step4'): 4}
+        if model_id != "model5":
+            step_options[tr('screen2_step5')] = 5
+        all_step_keys = list(step_options.keys())
+        if st.checkbox(tr('screen2_select_all_steps_cb'), value=False, key='cb_all_steps'):
+            default_steps = all_step_keys
+        else:
+            default_steps = [tr('screen2_step4')] if tr('screen2_step4') in all_step_keys else [all_step_keys[0]]
+        selected_steps_display = st.multiselect(
+            tr('screen2_steps_label'), options=all_step_keys, default=default_steps, key='ms_steps'
+        )
+        st.divider()
 
-            selected_steps_display = st.multiselect(
-                tr('screen2_steps_label'),
-                options=all_step_keys,
-                default=default_steps,
-                key='ms_steps'
-            )
-            
-            st.divider()
-            
-            # 3. Multiselect cho Runge-Kutta
-            st.subheader(tr('screen2_details_group_rk'))
-            order_options = {tr('screen2_order2'): 2, tr('screen2_order3'): 3, tr('screen2_order4'): 4}
-            all_order_keys = list(order_options.keys())
-            
-            # Nút chọn tất cả cho Orders
-            if st.checkbox(tr('screen2_select_all_steps_cb'), value=False, key='cb_all_orders'):
-                default_orders = all_order_keys
-            else:
-                default_orders = [tr('screen2_order4')]
+        st.subheader(tr('screen2_details_group_rk'))
+        order_options = {tr('screen2_order2'): 2, tr('screen2_order3'): 3, tr('screen2_order4'): 4}
+        all_order_keys = list(order_options.keys())
+        if st.checkbox(tr('screen2_select_all_steps_cb'), value=False, key='cb_all_orders'):
+            default_orders = all_order_keys
+        else:
+            default_orders = [tr('screen2_order4')]
+        selected_orders_display = st.multiselect(
+            tr('screen2_order_label'), options=all_order_keys, default=default_orders, key='ms_orders'
+        )
+        st.divider()
 
-            selected_orders_display = st.multiselect(
-                tr('screen2_order_label'),
-                options=all_order_keys,
-                default=default_orders,
-                key='ms_orders'
-            )
+        h_values = ["0.1", "0.05", "0.01", "0.005", "0.001"]
+        selected_h_str = st.radio(tr('screen2_h_label'), options=h_values, index=2, horizontal=True)
 
-            st.divider()
+        st.header(tr('screen2_params_group'))
+        param_inputs = {}
+        param_labels_key = f"param_keys_{st.session_state.lang}"
+        all_param_labels = model_data.get(param_labels_key, model_data.get("param_keys_vi", []))
+        internal_keys = model_data.get("internal_param_keys", [])
+        current_defaults = MODEL_DEFAULTS.get(model_id, {})
 
-            # 4. Chọn bước nhảy h (giữ nguyên)
-            h_values = ["0.1", "0.05", "0.01", "0.005", "0.001"]
-            selected_h_str = st.radio(tr('screen2_h_label'), options=h_values, index=2, horizontal=True)
-            
-            st.header(tr('screen2_params_group'))
-            param_inputs = {}
-            param_labels_key = f"param_keys_{st.session_state.lang}"
-            all_param_labels = model_data.get(param_labels_key, model_data.get("param_keys_vi", []))
-            internal_keys = model_data.get("internal_param_keys", [])
-
-            # Lấy dictionary default của model hiện tại
-            current_defaults = MODEL_DEFAULTS.get(model_id, {})
-
-            if model_id == "model4":
-                cols_m4 = st.columns(2)
-                for i, key in enumerate(internal_keys):
-                    label = tr(f"model4_param_{key.replace('₀','0').replace('₁','1')}")
-                    with cols_m4[i % 2]:
-                        # Lấy giá trị default từ current_defaults
-                        default_val = current_defaults.get(key, 0.0)
-                        param_inputs[key] = st.number_input(label, value=float(default_val), step=None, format="%.4f", key=f"param_{model_id}_{key}")
-            else:
-                for i, key in enumerate(internal_keys):
-                    label = all_param_labels[i] if i < len(all_param_labels) else key
-                    # Lấy giá trị default từ current_defaults
-                    default_val = current_defaults.get(key, 1.0)
+        if model_id == "model4":
+            cols_m4 = st.columns(2)
+            for i, key in enumerate(internal_keys):
+                label = tr(f"model4_param_{key.replace('0','0').replace('1','1')}")
+                with cols_m4[i % 2]:
+                    default_val = current_defaults.get(key, 0.0)
                     param_inputs[key] = st.number_input(label, value=float(default_val), step=None, format="%.4f", key=f"param_{model_id}_{key}")
-            
-            selected_component = 'x'
-            if model_id == "model6":
-                comp_data_m6 = model_data.get("components", {})
-                comp_options_m6_display = [tr(v) for v in comp_data_m6.values()]
-                comp_options_m6_keys = list(comp_data_m6.keys())
-                
-                selected_comp_disp_m6 = st.radio(
-                    tr('model6_select_component'), 
-                    comp_options_m6_display, 
-                    horizontal=True, 
-                    key=f"comp_{model_id}"
-                )
-                selected_component = comp_options_m6_keys[comp_options_m6_display.index(selected_comp_disp_m6)]
-            elif model_id == "model5":
-                comp_options = {tr('model5_component_x'): 'x', tr('model5_component_y'): 'y'}
-                selected_comp_disp = st.radio(tr('model5_select_component'), list(comp_options.keys()), horizontal=True, key=f"comp_{model_id}")
-                selected_component = comp_options[selected_comp_disp]
-            
-            submitted = st.form_submit_button(tr('screen2_init_button'), type="primary")
+        else:
+            for i, key in enumerate(internal_keys):
+                label = all_param_labels[i] if i < len(all_param_labels) else key
+                default_val = current_defaults.get(key, 1.0)
+                param_inputs[key] = st.number_input(label, value=float(default_val), step=None, format="%.4f", key=f"param_{model_id}_{key}")
+        
+        selected_component = 'x'
+        if model_id == "model6":
+            comp_data_m6 = model_data.get("components", {})
+            comp_options_m6_display = [tr(v) for v in comp_data_m6.values()]
+            comp_options_m6_keys = list(comp_data_m6.keys())
+            selected_comp_disp_m6 = st.radio(tr('model6_select_component'), comp_options_m6_display, horizontal=True, key=f"comp_{model_id}")
+            selected_component = comp_options_m6_keys[comp_options_m6_display.index(selected_comp_disp_m6)]
+        elif model_id == "model5":
+            comp_options_m5 = {tr('model5_component_x'): 'x', tr('model5_component_y'): 'y'}
+            selected_comp_disp_m5 = st.radio(tr('model5_select_component'), list(comp_options_m5.keys()), horizontal=True, key=f"comp_{model_id}")
+            selected_component = comp_options_m5[selected_comp_disp_m5]
+        
+        # --- FORM CHỈ CHỨA NÚT SUBMIT ---
+        with st.form(key='simulation_form'):
+            submitted = st.form_submit_button(tr('screen2_init_button'), type="primary", use_container_width=True)
 
-        if st.button(tr('screen2_refresh_button')):
+        if st.button(tr('screen2_refresh_button'), use_container_width=True):
             st.session_state.simulation_results = {}
             st.session_state.validated_params = {}
             st.rerun()
