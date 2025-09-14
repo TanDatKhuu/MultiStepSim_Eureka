@@ -3269,7 +3269,7 @@ def _m5_sim2_combined_ode(t, state):
         dx_kt = (params['v_kt'] * 0.5) * st.session_state.m5s2_last_kt_dir[0]
         dy_kt = (params['v_kt'] * 0.5) * st.session_state.m5s2_last_kt_dir[1]
 
-    # --- Logic Tàu ngầm (target) - ĐÃ SỬA LỖI ---
+    # --- Logic Tàu ngầm (target) ---
     v_base_tn = _m5s2_get_base_submarine_velocity(t, traj_params, params['v_tn_max'])
     norm_v_base = np.linalg.norm(v_base_tn)
     v_base_dir = v_base_tn / norm_v_base if norm_v_base > 1e-6 else np.array([0.0, 0.0])
@@ -3277,10 +3277,8 @@ def _m5_sim2_combined_ode(t, state):
     v_avoid, is_avoiding = _m5s2_get_smarter_avoidance_info(z_tn, z_kt, v_base_dir, params['avoidance_radius'], params['v_tn_max'], params['avoidance_strength'], params['fov_tn_degrees'])
     
     if is_avoiding: 
-        # Trộn lẫn vận tốc né và vận tốc cơ sở (như PySide6)
         v_total_desired = 0.2 * v_base_tn + 0.8 * v_avoid
     else:
-        # Logic rẽ ngẫu nhiên khi không né
         if 'm5s2_last_free_turn' not in st.session_state: 
             st.session_state.m5s2_last_free_turn = t - params['min_time_free_turn'] * 2
         v_final = v_base_tn
@@ -3291,18 +3289,14 @@ def _m5_sim2_combined_ode(t, state):
             st.session_state.m5s2_last_free_turn = t
         v_total_desired = v_final
     
-    # === SỬA LỖI QUAN TRỌNG NHẤT Ở ĐÂY ===
-    # Giới hạn tốc độ tối đa nhưng vẫn giữ hướng và độ lớn tương đối
+    # === SỬA LỖI LOGIC VẬN TỐC TÀU NGẦM (ĐỂ GIỐNG PYSIDE6) ===
     norm_total_tn = np.linalg.norm(v_total_desired)
-    if norm_total_tn > params['v_tn_max']:
-        # Nếu vận tốc tính ra lớn hơn mức cho phép, chỉ co lại về v_tn_max
-        dx_tn = v_total_desired[0] * (params['v_tn_max'] / norm_total_tn)
-        dy_tn = v_total_desired[1] * (params['v_tn_max'] / norm_total_tn)
+    if norm_total_tn < 1e-9:
+        dx_tn, dy_tn = 0.0, 0.0
     else:
-        # Nếu vận tốc tính ra nhỏ hơn hoặc bằng, SỬ DỤNG NÓ TRỰC TIẾP
-        # Đây là điểm mấu chốt để hành vi né (chạy chậm lại) có hiệu lực
-        dx_tn = v_total_desired[0]
-        dy_tn = v_total_desired[1]
+        # Luôn chuẩn hóa và nhân với vận tốc tối đa
+        dx_tn = (v_total_desired[0] / norm_total_tn) * params['v_tn_max']
+        dy_tn = (v_total_desired[1] / norm_total_tn) * params['v_tn_max']
     
     return np.array([dx_kt, dy_kt, dx_tn, dy_tn])
 
@@ -3339,7 +3333,7 @@ def _run_and_cache_m5_sim2(_solver_func_name, t_array, initial_state, catch_radi
             dx_kt = (params['v_kt'] * 0.5) * local_last_kt_dir[0]
             dy_kt = (params['v_kt'] * 0.5) * local_last_kt_dir[1]
 
-        # Logic Tàu ngầm (target) - ĐÃ SỬA LỖI
+        # Logic Tàu ngầm (target)
         v_base = _m5s2_get_base_submarine_velocity(t, traj_params, params['v_tn_max'])
         v_base_norm = np.linalg.norm(v_base)
         v_base_dir = v_base / v_base_norm if v_base_norm > 1e-6 else np.array([0.0, 0.0])
@@ -3357,14 +3351,14 @@ def _run_and_cache_m5_sim2(_solver_func_name, t_array, initial_state, catch_radi
                 local_last_free_turn = t
             v_total_desired = v_final
         
-        # === SỬA LỖI QUAN TRỌNG Ở ĐÂY ===
+        # === SỬA LỖI LOGIC VẬN TỐC TÀU NGẦM (ĐỂ GIỐNG PYSIDE6) ===
         norm_total_tn = np.linalg.norm(v_total_desired)
-        if norm_total_tn > params['v_tn_max']:
-            dx_tn = v_total_desired[0] * (params['v_tn_max'] / norm_total_tn)
-            dy_tn = v_total_desired[1] * (params['v_tn_max'] / norm_total_tn)
+        if norm_total_tn < 1e-9:
+            dx_tn, dy_tn = 0.0, 0.0
         else:
-            dx_tn = v_total_desired[0]
-            dy_tn = v_total_desired[1]
+            # Luôn chuẩn hóa và nhân với vận tốc tối đa
+            dx_tn = (v_total_desired[0] / norm_total_tn) * params['v_tn_max']
+            dy_tn = (v_total_desired[1] / norm_total_tn) * params['v_tn_max']
             
         return np.array([dx_kt, dy_kt, dx_tn, dy_tn])
 
@@ -3501,7 +3495,7 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
             # --- Lấy dữ liệu mô phỏng cần thiết ---
             sim_data = {}
             if model_id == 'model5' and st.session_state.m5_scenario == 2:
-                if 'm5s2_results' not in st.session_state:
+                if 'm5s2_results' not in st.session_state or not st.session_state.m5s2_results:
                     run_and_store_model5_scenario2_results()
                 sim_data = st.session_state.get('m5s2_results', {})
             else:
@@ -3557,40 +3551,46 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
             for frame_idx in range(num_frames):
                 progress_percent = (frame_idx + 1) / num_frames
                 progress_bar.progress(progress_percent)
-                progress_text.text(f"{tr('gif_generating_spinner')} ({frame_idx + 1}/{num_frames})")
+                progress_text.text(f"{_tr('gif_generating_spinner')} ({frame_idx + 1}/{num_frames})")
 
                 ax.clear()
                 
-                # --- MODEL 2: TĂNG TRƯỞNG TẾ BÀO (LOGIC ĐÃ SỬA) ---
+                # === SỬA LỖI MODEL 2: TĂNG TRƯỞNG TẾ BÀO ===
                 if model_id == 'model2':
                     t_data, y_data = sim_data['t_plot'], sim_data['approx_sol_plot']
                     target_n = int(round(y_data[frame_idx]))
                     
-                    # === BẮT ĐẦU THAY ĐỔI LOGIC SINH SẢN ===
-                    if len(model2_cells) < target_n:
-                        to_add = target_n - len(model2_cells)
-                        for _ in range(to_add):
-                            # 1. Chọn tế bào mẹ từ 20 tế bào mới nhất (hoặc tất cả nếu ít hơn 20)
-                            parent_candidates = model2_cells[-20:]
-                            parent = random.choice(parent_candidates)
-                            
-                            # 2. Tạo vị trí con mới ngay cạnh mẹ, không cần thử nhiều lần
+                    # === BẮT ĐẦU LOGIC SINH SẢN ĐÃ SỬA (GIỐNG PYSIDE6) ===
+                    while len(model2_cells) < target_n:
+                        # 1. Chọn tế bào mẹ ngẫu nhiên
+                        parent_cell = random.choice(model2_cells)
+                        
+                        # 2. Thử tìm vị trí mới không va chạm
+                        found_spot = False
+                        for _ in range(20): # Thử tối đa 20 lần cho mỗi tế bào mới
                             angle = random.uniform(0, 2 * np.pi)
-                            new_x = parent.x + np.cos(angle) * 1.0 
-                            new_y = parent.y + np.sin(angle) * 1.0
+                            # Đặt tế bào con cách tế bào mẹ một khoảng bằng đường kính
+                            dist = 2.0 * 0.5 
+                            new_x = parent_cell.x + dist * np.cos(angle)
+                            new_y = parent_cell.y + dist * np.sin(angle)
                             
-                            # 3. LOẠI BỎ HOÀN TOÀN VIỆC KIỂM TRA VA CHẠM
-                            # Dòng code cũ bị xóa:
-                            # if not any(np.hypot(new_x - c.x, new_y - c.y) < 1.0 for c in model2_cells):
-                            #     model2_cells.append(Cell(new_x, new_y, parent.gen + 1))
-                            #     break
+                            # 3. KIỂM TRA VA CHẠM
+                            is_overlapping = any(
+                                np.hypot(new_x - c.x, new_y - c.y) < 2.0 * 0.5 
+                                for c in model2_cells
+                            )
                             
-                            # Thêm tế bào mới một cách vô điều kiện
-                            model2_cells.append(Cell(new_x, new_y, parent.gen + 1))
-                    # === KẾT THÚC THAY ĐỔI LOGIC ===
+                            if not is_overlapping:
+                                model2_cells.append(Cell(new_x, new_y, parent_cell.gen + 1))
+                                found_spot = True
+                                break # Thoát vòng lặp "thử"
+                        
+                        if not found_spot:
+                            # Nếu thử 20 lần mà không được, có thể bỏ qua để tránh treo
+                            break # Thoát vòng lặp "while"
+                    # === KẾT THÚC LOGIC SINH SẢN ĐÃ SỬA ===
                     
                     all_x = [c.x for c in model2_cells]; all_y = [c.y for c in model2_cells]
-                    # Thêm viền đen cho tế bào để giống PySide6
                     for cell in model2_cells: 
                         ax.add_patch(MplCircle((cell.x, cell.y), radius=0.5, color='#A52A2A', ec='black', lw=0.5, alpha=0.9))
                     
@@ -3598,8 +3598,8 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                         max_coord = max(max(np.abs(all_x)), max(np.abs(all_y))) + 2
                         ax.set_xlim(-max_coord, max_coord); ax.set_ylim(-max_coord, max_coord)
                     ax.set_aspect('equal'); ax.axis('off')
-                    ax.legend([MplCircle((0,0), 0.1, color='#A52A2A', ec='black', lw=0.5)], [tr("screen3_legend_model2_cell")], loc='upper right')
-                    ax.set_title(tr("screen3_model2_anim_plot_title") + f"\nTime: {t_data[frame_idx]:.2f}s | Cells: {len(model2_cells)}")
+                    ax.legend([MplCircle((0,0), 0.1, color='#A52A2A', ec='black', lw=0.5)], [_tr("screen3_legend_model2_cell")], loc='upper right')
+                    ax.set_title(_tr("screen3_model2_anim_plot_title") + f"\nTime: {t_data[frame_idx]:.2f}s | Cells: {len(model2_cells)}")
 
                 # --- CÁC MODEL KHÁC GIỮ NGUYÊN ---
                 elif model_id == 'model3':
@@ -3608,42 +3608,49 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                     ax.set_aspect('equal'); ax.set_xticks([]); ax.set_yticks([])
                     abm_params = model_data.get("abm_defaults", {})
                     s_coords, i_coords = abm_instance.get_display_coords(abm_params['display_max_total'], abm_params['display_sample_size'])
-                    if s_coords.shape[0] > 0: ax.scatter(s_coords[:, 0], s_coords[:, 1], c='blue', s=20, label=tr('screen3_legend_abm_susceptible'))
-                    if i_coords.shape[0] > 0: ax.scatter(i_coords[:, 0], i_coords[:, 1], c='red', marker='*', s=80, label=tr('screen3_legend_abm_infected'))
+                    if s_coords.shape[0] > 0: ax.scatter(s_coords[:, 0], s_coords[:, 1], c='blue', s=20, label=_tr('screen3_legend_abm_susceptible'))
+                    if i_coords.shape[0] > 0: ax.scatter(i_coords[:, 0], i_coords[:, 1], c='red', marker='*', s=80, label=_tr('screen3_legend_abm_infected'))
                     ax.legend()
                     stats = abm_instance.get_current_stats()
-                    ax.set_title(tr("screen3_abm_anim_plot_title") + f"\nStep: {stats['time_step']} | Infected: {stats['infected_count']}")
+                    ax.set_title(_tr("screen3_abm_anim_plot_title") + f"\nStep: {stats['time_step']} | Infected: {stats['infected_count']}")
                     if ended_by_logic: break
 
                 elif model_id == 'model5' and st.session_state.m5_scenario == 1:
                     t_data = sim_data.get('t_plot')
+                    # SỬA LỖI NẾU approx_sol_plot_all_components là None
+                    if sim_data.get('approx_sol_plot_all_components') is None:
+                        st.error("Lỗi: Dữ liệu quỹ đạo cho Model 5 Sim 1 không tồn tại.")
+                        break # Dừng tạo GIF nếu thiếu dữ liệu
                     x_path, y_path = sim_data['approx_sol_plot_all_components']
-                    ax.plot(x_path, y_path, 'b--', alpha=0.5, label=tr('screen3_legend_m5s1_path'))
-                    ax.plot(x_path[frame_idx], y_path[frame_idx], 'rP', markersize=12, label=tr('screen3_legend_m5s1_boat'))
+                    
+                    ax.plot(x_path, y_path, 'b--', alpha=0.5, label=_tr('screen3_legend_m5s1_path'))
+                    ax.plot(x_path[frame_idx], y_path[frame_idx], 'rP', markersize=12, label=_tr('screen3_legend_m5s1_boat'))
                     d_val = validated_params['params']['x0']
                     ax.axvline(0, color='grey', ls=':'); ax.axvline(d_val, color='grey', ls=':')
-                    ax.set_xlabel(tr('screen3_model5_plot_xlabel_sim1')); ax.set_ylabel(tr('screen3_model5_plot_ylabel_sim1'))
+                    ax.set_xlabel(_tr('screen3_model5_plot_xlabel_sim1')); ax.set_ylabel(_tr('screen3_model5_plot_ylabel_sim1'))
                     ax.grid(True); ax.legend(); ax.set_aspect('equal')
-                    ax.set_title(tr("screen3_model5_plot_title_sim1") + f"\nTime: {t_data[frame_idx]:.2f}s")
+                    ax.set_title(_tr("screen3_model5_plot_title_sim1") + f"\nTime: {t_data[frame_idx]:.2f}s")
                 
                 elif model_id == 'model5' and st.session_state.m5_scenario == 2:
                     t_points, state_hist = sim_data['time_points'], sim_data['state_history']
                     is_caught, catch_time = sim_data['caught'], sim_data['time_of_catch']
                     pursuer_path, evader_path = state_hist[:, 0:2], state_hist[:, 2:4]
                     
-                    ax.plot(pursuer_path[:, 0], pursuer_path[:, 1], 'r-', label=tr('screen3_legend_m5s2_path_destroyer'))
-                    ax.plot(evader_path[:, 0], evader_path[:, 1], 'b--', label=tr('screen3_legend_m5s2_path_submarine'))
-                    ax.plot(pursuer_path[frame_idx, 0], pursuer_path[frame_idx, 1], 'rP', markersize=12, label=tr('screen3_legend_m5s2_destroyer'))
-                    ax.plot(evader_path[frame_idx, 0], evader_path[frame_idx, 1], 'bo', markersize=8, label=tr('screen3_legend_m5s2_submarine'))
+                    ax.plot(pursuer_path[:, 0], pursuer_path[:, 1], 'r-', label=_tr('screen3_legend_m5s2_path_destroyer'))
+                    ax.plot(evader_path[:, 0], evader_path[:, 1], 'b--', label=_tr('screen3_legend_m5s2_path_submarine'))
+                    ax.plot(pursuer_path[frame_idx, 0], pursuer_path[frame_idx, 1], 'rP', markersize=12, label=_tr('screen3_legend_m5s2_destroyer'))
+                    ax.plot(evader_path[frame_idx, 0], evader_path[frame_idx, 1], 'bo', markersize=8, label=_tr('screen3_legend_m5s2_submarine'))
                     
                     if is_caught and t_points[frame_idx] >= catch_time:
-                        catch_frame_idx = np.where(t_points >= catch_time)[0][0]
-                        catch_point = state_hist[catch_frame_idx, 0:2]
-                        ax.plot(catch_point[0], catch_point[1], 'gX', markersize=15, label=tr('screen3_legend_m5s2_catch_point'))
+                        catch_frame_idx_arr = np.where(t_points >= catch_time)[0]
+                        if len(catch_frame_idx_arr) > 0:
+                            catch_frame_idx = catch_frame_idx_arr[0]
+                            catch_point = state_hist[catch_frame_idx, 0:2]
+                            ax.plot(catch_point[0], catch_point[1], 'gX', markersize=15, label=_tr('screen3_legend_m5s2_catch_point'))
                     
-                    ax.set_xlabel(tr("screen3_model5_plot_xlabel_sim2")); ax.set_ylabel(tr("screen3_model5_plot_ylabel_sim2"))
+                    ax.set_xlabel(_tr("screen3_model5_plot_xlabel_sim2")); ax.set_ylabel(_tr("screen3_model5_plot_ylabel_sim2"))
                     ax.grid(True); ax.legend(); ax.set_aspect('equal')
-                    ax.set_title(tr("screen3_model5_plot_title_sim2") + f"\nTime: {t_points[frame_idx]:.2f}s")
+                    ax.set_title(_tr("screen3_model5_plot_title_sim2") + f"\nTime: {t_points[frame_idx]:.2f}s")
                     if is_caught and t_points[frame_idx] >= catch_time:
                         break
                 
@@ -3658,44 +3665,49 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
             plt.close(fig)
 
             # --- Tạo thông tin cuối cùng (final_stats) ---
+            # (Logic này giữ nguyên, không cần sửa)
             if model_id == 'model2':
                 c_val = st.session_state.get('last_calculated_c', 'N/A')
                 final_stats = {
-                    tr('screen3_result_c'): {'value': f"{c_val:.4g}" if isinstance(c_val, float) else "N/A"},
-                    tr('screen3_result_mass'): {'value': len(model2_cells)},
-                    tr('screen3_result_time'): {'value': f"{sim_data['t_plot'][-1]:.2f} s"}
+                    _tr('screen3_result_c'): {'value': f"{c_val:.4g}" if isinstance(c_val, float) else "N/A"},
+                    _tr('screen3_result_mass'): {'value': len(model2_cells)},
+                    _tr('screen3_result_time'): {'value': f"{sim_data['t_plot'][-1]:.2f} s"}
                 }
             elif model_id == 'model3':
                 stats = abm_instance.get_current_stats()
                 final_stats = {
-                    tr('screen3_total_pop'): {'value': stats['total_population']},
-                    tr('screen3_susceptible_pop'): {'value': stats['susceptible_count']},
-                    tr('screen3_infected_pop'): {'value': stats['infected_count']},
-                    tr('screen3_model3_simulation_time_label'): {'value': stats['time_step']}
+                    _tr('screen3_total_pop'): {'value': stats['total_population']},
+                    _tr('screen3_susceptible_pop'): {'value': stats['susceptible_count']},
+                    _tr('screen3_infected_pop'): {'value': stats['infected_count']},
+                    _tr('screen3_model3_simulation_time_label'): {'value': stats['time_step']}
                 }
             elif model_id == 'model5' and st.session_state.m5_scenario == 1:
-                x_path, y_path = sim_data['approx_sol_plot_all_components']
-                final_stats = {
-                    tr('screen3_m5_boat_speed'): {'value': f"{validated_params['params']['v']:.2f}"},
-                    tr('screen3_m5_water_speed'): {'value': f"{validated_params['params']['u']:.2f}"},
-                    tr('screen3_m5_crossing_time'): {'value': f"{sim_data['t_plot'][-1]:.2f} s"},
-                    tr('screen3_m5_boat_reaches_target'): {'value': tr('answer_yes') if abs(x_path[-1]) < 0.1 else tr('answer_no'), 'size_class': 'metric-value-small'},
-                    tr('screen3_m5_boat_final_pos'): {'value': f"({x_path[-1]:.2f}, {y_path[-1]:.2f})", 'size_class': 'metric-value-small'}
-                }
+                if sim_data.get('approx_sol_plot_all_components') is not None:
+                    x_path, y_path = sim_data['approx_sol_plot_all_components']
+                    final_stats = {
+                        _tr('screen3_m5_boat_speed'): {'value': f"{validated_params['params']['v']:.2f}"},
+                        _tr('screen3_m5_water_speed'): {'value': f"{validated_params['params']['u']:.2f}"},
+                        _tr('screen3_m5_crossing_time'): {'value': f"{sim_data['t_plot'][-1]:.2f} s"},
+                        _tr('screen3_m5_boat_reaches_target'): {'value': _tr('answer_yes') if abs(x_path[-1]) < 0.1 else _tr('answer_no'), 'size_class': 'metric-value-small'},
+                        _tr('screen3_m5_boat_final_pos'): {'value': f"({x_path[-1]:.2f}, {y_path[-1]:.2f})", 'size_class': 'metric-value-small'}
+                    }
+                else: final_stats = {} # Tránh lỗi nếu dữ liệu không có
             elif model_id == 'model5' and st.session_state.m5_scenario == 2:
                 is_caught, catch_time = sim_data['caught'], sim_data['time_of_catch']
-                status_str = tr('answer_yes') if is_caught else tr('answer_no')
+                status_str = _tr('answer_yes') if is_caught else _tr('answer_no')
                 catch_point_str = "N/A"
                 if is_caught:
-                    catch_frame_idx = np.where(sim_data['time_points'] >= catch_time)[0][0]
-                    catch_point = sim_data['state_history'][catch_frame_idx, 0:2]
-                    catch_point_str = f"({catch_point[0]:.2f}, {catch_point[1]:.2f})"
+                    catch_frame_idx_arr = np.where(sim_data['time_points'] >= catch_time)[0]
+                    if len(catch_frame_idx_arr) > 0:
+                        catch_frame_idx = catch_frame_idx_arr[0]
+                        catch_point = sim_data['state_history'][catch_frame_idx, 0:2]
+                        catch_point_str = f"({catch_point[0]:.2f}, {catch_point[1]:.2f})"
                 final_stats = {
-                    tr('screen3_m5_submarine_speed'): {'value': f"{st.session_state.m5s2_params['v_tn_max']:.2f}"},
-                    tr('screen3_m5_destroyer_speed'): {'value': f"{st.session_state.m5s2_params['v_kt']:.2f}"},
-                    tr('screen3_m5_catch_time'): {'value': f"{sim_data['time_points'][-1]:.2f} s"},
-                    tr('screen3_m5_destroyer_catches_submarine'): {'value': status_str, 'size_class': 'metric-value-small'},
-                    tr('screen3_m5_catch_point'): {'value': catch_point_str, 'size_class': 'metric-value-small'}
+                    _tr('screen3_m5_submarine_speed'): {'value': f"{st.session_state.m5s2_params['v_tn_max']:.2f}"},
+                    _tr('screen3_m5_destroyer_speed'): {'value': f"{st.session_state.m5s2_params['v_kt']:.2f}"},
+                    _tr('screen3_m5_catch_time'): {'value': f"{sim_data['time_points'][-1]:.2f} s"},
+                    _tr('screen3_m5_destroyer_catches_submarine'): {'value': status_str, 'size_class': 'metric-value-small'},
+                    _tr('screen3_m5_catch_point'): {'value': catch_point_str, 'size_class': 'metric-value-small'}
                 }
             else:
                 final_stats = {}
