@@ -2558,16 +2558,25 @@ def _perform_single_simulation(model_data, ode_func, exact_sol_func, y0, t_start
     model_id = model_data.get("id")
 
     # --- Chọn hàm solver ---
-    # THÊM BỘ SOLVER CHO MODEL 6
     method_map_model6 = {
         "Bashforth": {2: _model6_ab2, 3: _model6_ab3, 4: _model6_ab4, 5: _model6_ab5},
-        "Moulton": {2: _model6_am2, 3: _model6_am3, 4: _model6_am4}
+        "Moulton": {2: _model6_am2, 3: _model6_am3, 4: _model6_am4},
+        "RungeKutta": {2: _model6_rk2, 3: _model6_rk3, 4: _model6_rk4} # THÊM RK CHO MODEL 6
     }
-    method_map_single = {"Bashforth": {2: AB2, 3: AB3, 4: AB4, 5: AB5}, "Moulton": {2: AM2, 3: AM3, 4: AM4}}
-    method_map_system = {"Bashforth": {2: AB2_system, 3: AB3_system, 4: AB4_system, 5: AB5_system}, "Moulton": {2: AM2_system, 3: AM3_system, 4: AM4_system}}
+    method_map_single = {
+        "Bashforth": {2: AB2, 3: AB3, 4: AB4, 5: AB5}, 
+        "Moulton": {2: AM2, 3: AM3, 4: AM4},
+        "RungeKutta": {2: RK2, 3: RK3, 4: RK4} # THÊM RK CHO PT ĐƠN
+    }
+    method_map_system = {
+        "Bashforth": {2: AB2_system, 3: AB3_system, 4: AB4_system, 5: AB5_system}, 
+        "Moulton": {2: AM2_system, 3: AM3_system, 4: AM4_system},
+        "RungeKutta": {2: RK2_system, 3: RK3_system, 4: RK4_system} # THÊM RK CHO HỆ PT
+    }
     method_map_model5 = {
         "Bashforth": {2: AB2_original_system_M5, 3: AB3_original_system_M5, 4: AB4_original_system_M5, 5: AB5_original_system_M5},
-        "Moulton": {2: AM2_original_system_M5, 3: AM3_original_system_M5, 4: AM4_original_system_M5}
+        "Moulton": {2: AM2_original_system_M5, 3: AM3_original_system_M5, 4: AM4_original_system_M5},
+        "RungeKutta": {2: RK2_original_system_M5, 3: RK3_original_system_M5, 4: RK4_original_system_M5} # THÊM RK CHO MODEL 5
     }
     
     current_map = method_map_single
@@ -2577,7 +2586,7 @@ def _perform_single_simulation(model_data, ode_func, exact_sol_func, y0, t_start
     
     method_func = current_map.get(method_short, {}).get(steps_int)
     if method_func is None:
-        st.error(f"Solver không tồn tại cho {method_short} {steps_int} bước.")
+        st.error(f"Solver không tồn tại cho {method_short} {steps_int} bước/bậc.")
         return None
 
     # --- Logic tính toán cho đồ thị và bậc hội tụ ---
