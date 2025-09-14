@@ -2808,33 +2808,65 @@ def show_simulation_page():
             select_rk = st.checkbox(tr('screen2_method_rk'), value=False, key='cb_rk')
             st.divider()
 
-            st.subheader(tr('screen2_details_group_ab'))
-            step_options = {tr('screen2_step2'): 2, tr('screen2_step3'): 3, tr('screen2_step4'): 4}
-            if model_id != "model5":
-                step_options[tr('screen2_step5')] = 5
-            all_step_keys = list(step_options.keys())
-            
-            if st.checkbox(tr('screen2_select_all_steps_cb'), value=False, key='cb_all_steps'):
-                default_steps = all_step_keys
-            else:
-                default_steps = [tr('screen2_step4')] if tr('screen2_step4') in all_step_keys else [all_step_keys[0]]
-            selected_steps_display = st.multiselect(
-                tr('screen2_steps_label'), options=all_step_keys, default=default_steps, key='ms_steps'
-            )
-            st.divider()
+            # 1. Khu vực chi tiết cho Adams-Bashforth
+            if select_ab:
+                st.subheader(tr('screen2_details_group_ab'))
+                step_options_ab = {tr('screen2_step2'): 2, tr('screen2_step3'): 3, tr('screen2_step4'): 4}
+                # AB hỗ trợ 5 bước (trừ model 5)
+                if model_id != "model5":
+                    step_options_ab[tr('screen2_step5')] = 5
+                
+                if st.checkbox(tr('screen2_select_all_steps_cb'), value=False, key='cb_all_steps_ab'):
+                    default_steps_ab = list(step_options_ab.keys())
+                else:
+                    default_steps_ab = [tr('screen2_step4')] if tr('screen2_step4') in step_options_ab else [list(step_options_ab.keys())[0]]
 
-            st.subheader(tr('screen2_details_group_rk'))
-            order_options = {tr('screen2_order2'): 2, tr('screen2_order3'): 3, tr('screen2_order4'): 4}
-            all_order_keys = list(order_options.keys())
-            
-            if st.checkbox(tr('screen2_select_all_steps_cb'), value=False, key='cb_all_orders'):
-                default_orders = all_order_keys
-            else:
-                default_orders = [tr('screen2_order4')]
-            selected_orders_display = st.multiselect(
-                tr('screen2_order_label'), options=all_order_keys, default=default_orders, key='ms_orders'
-            )
-            st.divider()
+                st.multiselect(
+                    tr('screen2_steps_label'), 
+                    options=list(step_options_ab.keys()), 
+                    default=default_steps_ab, 
+                    key='ms_steps_ab' # KEY RIÊNG
+                )
+                st.divider()
+
+            # 2. Khu vực chi tiết cho Adams-Moulton
+            if select_am:
+                # Dùng subheader khác để phân biệt, có thể thêm vào file ngôn ngữ
+                st.subheader(tr('screen2_details_group_am', "2. Chi tiết Adams-Moulton")) 
+                # AM chỉ hỗ trợ đến 4 bước
+                step_options_am = {tr('screen2_step2'): 2, tr('screen2_step3'): 3, tr('screen2_step4'): 4}
+                
+                if st.checkbox(tr('screen2_select_all_steps_cb'), value=False, key='cb_all_steps_am'):
+                     default_steps_am = list(step_options_am.keys())
+                else:
+                     default_steps_am = [tr('screen2_step4')]
+
+                st.multiselect(
+                    tr('screen2_steps_label'), 
+                    options=list(step_options_am.keys()), 
+                    default=default_steps_am, 
+                    key='ms_steps_am' # KEY RIÊNG
+                )
+                st.divider()
+
+            # 3. Khu vực chi tiết cho Runge-Kutta
+            if select_rk:
+                st.subheader(tr('screen2_details_group_rk'))
+                order_options = {tr('screen2_order2'): 2, tr('screen2_order3'): 3, tr('screen2_order4'): 4}
+                all_order_keys = list(order_options.keys())
+                
+                if st.checkbox(tr('screen2_select_all_steps_cb'), value=False, key='cb_all_orders_rk'):
+                    default_orders = all_order_keys
+                else:
+                    default_orders = [tr('screen2_order4')]
+                
+                st.multiselect(
+                    tr('screen2_order_label'), 
+                    options=all_order_keys, 
+                    default=default_orders, 
+                    key='ms_orders' # Key này đã riêng biệt
+                )
+                st.divider()
 
             h_values = ["0.1", "0.05", "0.01", "0.005", "0.001"]
             selected_h_str = st.radio(tr('screen2_h_label'), options=h_values, index=2, horizontal=True)
@@ -2885,12 +2917,26 @@ def show_simulation_page():
             selected_steps_int = [step_options[s] for s in st.session_state.ms_steps]
             selected_orders_int = [order_options[o] for o in st.session_state.ms_orders]
             tasks_to_run = {}
-            if st.session_state.cb_ab: tasks_to_run["Bashforth"] = selected_steps_int
+            if st.session_state.cb_ab:
+                if 'ms_steps_ab' in st.session_state and st.session_state.ms_steps_ab:
+                    tasks_to_run["Bashforth"] = [step_options[s] for s in st.session_state.ms_steps_ab]
+                else:
+                    is_valid = False
+                    error_messages.append(tr('msg_select_step_for_method').format(tr('screen2_method_ab')))
+
             if st.session_state.cb_am:
-                am_steps = [s for s in selected_steps_int if s in [2, 3, 4]]
-                if 5 in selected_steps_int and 4 not in am_steps: am_steps.append(4)
-                tasks_to_run["Moulton"] = am_steps
-            if st.session_state.cb_rk: tasks_to_run["RungeKutta"] = selected_orders_int
+                if 'ms_steps_am' in st.session_state and st.session_state.ms_steps_am:
+                    tasks_to_run["Moulton"] = [step_options[s] for s in st.session_state.ms_steps_am]
+                else:
+                    is_valid = False
+                    error_messages.append(tr('msg_select_step_for_method').format(tr('screen2_method_am')))
+
+            if st.session_state.cb_rk:
+                if 'ms_orders' in st.session_state and st.session_state.ms_orders:
+                    tasks_to_run["RungeKutta"] = [order_options[o] for o in st.session_state.ms_orders]
+                else:
+                    is_valid = False
+                    error_messages.append(tr('msg_select_step_for_method').format(tr('screen2_method_rk')))
             is_valid = True
             error_messages = []
             if not tasks_to_run:
