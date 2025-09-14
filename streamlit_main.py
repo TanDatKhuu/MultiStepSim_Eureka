@@ -3173,7 +3173,7 @@ def show_simulation_page():
                                 df_data[tr('screen2_info_area_show_data_exact')] = exact
                                 df_data[tr('screen2_info_area_show_data_error')] = np.abs(np.array(approx) - np.array(exact))
                             df = pd.DataFrame(df_data)
-                            st.dataframe(df.head(20).style.format("{:.6f}"), use_container_width=True, height=300)
+                            st.dataframe(df.head(20).style.format("{:.10f}"), use_container_width=True, height=300)
                         else:
                             st.write(tr("screen2_info_area_show_data_no_points"))
                 st.write("---")
