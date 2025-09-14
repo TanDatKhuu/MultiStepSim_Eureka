@@ -3272,32 +3272,12 @@ def run_and_prepare_m5s1_animation_data(_validated_params_json):
     
     # Chuẩn bị dữ liệu đồ họa
     d_val = x0
-    x_traj_min, x_traj_max = np.min(z_array_actual[:, 0]), np.max(z_array_actual[:, 0])
-    y_traj_min, y_traj_max = np.min(z_array_actual[:, 1]), np.max(z_array_actual[:, 1])
-
-    padding_x_standalone = 0.1 * d_val
-    y_range_for_padding_standalone = max(abs(y_traj_max - y_traj_min), 0.5 * d_val)
-    padding_y_abs_standalone = 0.2 * y_range_for_padding_standalone
-
-    xlim_min_standalone = min(x_traj_min - padding_x_standalone, -padding_x_standalone)
-    xlim_max_standalone = max(x_traj_max + padding_x_standalone, d_val + padding_x_standalone)
-
-    ylim_min_calc = min(y_traj_min - padding_y_abs_standalone, y0 - padding_y_abs_standalone)
-    ylim_max_calc = max(y_traj_max + padding_y_abs_standalone, y0 + padding_y_abs_standalone)
-    
-    # Logic điều chỉnh thêm cho ylim từ PySide6
-    if ylim_min_calc >= -1.0:
-        ylim_min_standalone = min(ylim_min_calc, -max(2.0, padding_y_abs_standalone))
-    else:
-        ylim_min_standalone = ylim_min_calc
-    
-    if ylim_max_calc <= 1.0:
-        ylim_max_standalone = max(ylim_max_calc, max(2.0, padding_y_abs_standalone))
-    else:
-        ylim_max_standalone = ylim_max_calc
-
-    xlim = (xlim_min_standalone, xlim_max_standalone)
-    ylim = (ylim_min_standalone, ylim_max_standalone)
+    xlim = (-0.1 * d_val, d_val * 1.1)
+    ylim_max = d_val * 0.4
+    y_drift_factor = 2.5
+    ylim_min_calculated = -d_val * (u / v if v > 1e-6 else 1.0) * y_drift_factor
+    ylim_min = min(-d_val, ylim_min_calculated)
+    ylim = (ylim_min, ylim_max)
     
     arrow_data = None
     if u != 0:
@@ -3741,12 +3721,32 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                     x_path, y_path = sim_data['approx_sol_plot_all_components']
                     d_val = validated_params['params']['x0']
                     
-                    xlim, ylim = sim_data['plot_limits']['xlim'], sim_data['plot_limits']['ylim']
-                    ax.set_xlim(xlim); ax.set_ylim(ylim)
-                    
-                    ax.fill_betweenx(ylim, xlim[0], 0, color='#A0522D', alpha=0.8)
-                    ax.fill_betweenx(ylim, 0, d_val, color='#87CEEB', alpha=0.7)
-                    ax.fill_betweenx(ylim, d_val, xlim[1], color='#A0522D', alpha=0.8)
+                    plot_limits = sim_data.get('plot_limits', {})
+                    xlim = plot_limits.get('xlim')
+                    ylim = plot_limits.get('ylim')
+	
+	                # Chỉ set giới hạn nếu nó tồn tại trong sim_data
+                    if xlim and ylim:
+                        ax.set_xlim(xlim)
+                        ax.set_ylim(ylim)
+                    else:
+	                    # Fallback (phòng trường hợp plot_limits không được truyền qua)
+	                    # Bạn có thể giữ lại logic tính toán động cũ ở đây như một phương án dự phòng,
+	                    # nhưng với Bước 1 đã đúng, nó sẽ không được gọi đến.
+                        print("Cảnh báo: Không tìm thấy 'plot_limits' trong sim_data. Tự động tính toán giới hạn.")
+	                    # (logic tính toán động cũ có thể đặt ở đây)
+	                
+	                # ====================================================================
+	                # === KẾT THÚC SỬA LỖI ===
+	                # ====================================================================
+	
+	                # Vẽ nền (fill_betweenx) cần sử dụng giới hạn đã được set
+	                # Lấy lại ylim đã được áp dụng cho trục để đảm bảo chính xác
+                    current_ylim = ax.get_ylim()
+                    current_xlim = ax.get_xlim()
+                    ax.fill_betweenx(current_ylim, current_xlim[0], 0, color='#A0522D', alpha=0.8)
+                    ax.fill_betweenx(current_ylim, 0, d_val, color='#87CEEB', alpha=0.7)
+                    ax.fill_betweenx(current_ylim, d_val, current_xlim[1], color='#A0522D', alpha=0.8)
                     
                     if sim_data.get('arrow_data'):
                         X, Y, U, V = sim_data['arrow_data']
