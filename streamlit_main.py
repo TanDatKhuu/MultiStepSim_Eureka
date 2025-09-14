@@ -2795,7 +2795,8 @@ def show_simulation_page():
             st.session_state.page = 'model_selection'
             st.rerun()
 
-        if st.button(tr("screen2_back_button"), use_container_width=True, type="secondary"):
+        # SỬA LỖI 2: Thay use_container_width
+        if st.button(tr("screen2_back_button"), width='stretch', type="secondary"):
             _cleanup_and_go_to_model_selection()
         
         st.title(tr("sidebar_title"))
@@ -2862,9 +2863,11 @@ def show_simulation_page():
                 selected_comp_disp_m5 = st.radio(tr('model5_select_component'), list(comp_options_m5.keys()), horizontal=True, key=f"comp_{model_id}")
                 selected_component = comp_options_m5[selected_comp_disp_m5]
             
-            submitted = st.form_submit_button(tr('screen2_init_button'), type="primary", use_container_width=True)
+            # SỬA LỖI 2: Thay use_container_width
+            submitted = st.form_submit_button(tr('screen2_init_button'), type="primary", width='stretch')
 
-        if st.button(tr('screen2_refresh_button'), use_container_width=True):
+        # SỬA LỖI 2: Thay use_container_width
+        if st.button(tr('screen2_refresh_button'), width='stretch'):
             st.session_state.simulation_results = {}
             st.session_state.validated_params = {}
             st.rerun()
@@ -2874,97 +2877,65 @@ def show_simulation_page():
     st.subheader(model_name_tr)
 
     if submitted:
+        # ... (logic xử lý form submit không thay đổi)
         with st.spinner(tr('screen2_info_area_running')):
-            # --- 1. Lấy lựa chọn của người dùng (từ widget keys đã định nghĩa ở trên) ---
             step_options = {tr('screen2_step2'): 2, tr('screen2_step3'): 3, tr('screen2_step4'): 4}
             if model_id != "model5": step_options[tr('screen2_step5')] = 5
             order_options = {tr('screen2_order2'): 2, tr('screen2_order3'): 3, tr('screen2_order4'): 4}
-            
             selected_steps_int = [step_options[s] for s in st.session_state.ms_steps]
             selected_orders_int = [order_options[o] for o in st.session_state.ms_orders]
-
-            # --- 2. Xây dựng danh sách công việc (tasks_to_run) ---
             tasks_to_run = {}
-            if st.session_state.cb_ab:
-                tasks_to_run["Bashforth"] = selected_steps_int
+            if st.session_state.cb_ab: tasks_to_run["Bashforth"] = selected_steps_int
             if st.session_state.cb_am:
-                # AM chỉ chạy đến 4 bước
                 am_steps = [s for s in selected_steps_int if s in [2, 3, 4]]
-                if 5 in selected_steps_int and 4 not in am_steps:
-                    am_steps.append(4)
+                if 5 in selected_steps_int and 4 not in am_steps: am_steps.append(4)
                 tasks_to_run["Moulton"] = am_steps
-            if st.session_state.cb_rk:
-                tasks_to_run["RungeKutta"] = selected_orders_int
-            
-            # --- 3. Validate đầu vào ---
+            if st.session_state.cb_rk: tasks_to_run["RungeKutta"] = selected_orders_int
             is_valid = True
             error_messages = []
             if not tasks_to_run:
-                error_messages.append(tr('msg_select_method'))
-                is_valid = False
+                error_messages.append(tr('msg_select_method')); is_valid = False
             if 't0' in param_inputs and 't1' in param_inputs and param_inputs['t1'] <= param_inputs['t0']:
-                error_messages.append(tr('msg_t_end_error'))
-                is_valid = False
-            # Kiểm tra xem ít nhất một lựa chọn chi tiết có được chọn không
+                error_messages.append(tr('msg_t_end_error')); is_valid = False
             if (st.session_state.cb_ab or st.session_state.cb_am) and not selected_steps_int:
-                error_messages.append(tr('msg_select_step'))
-                is_valid = False
+                error_messages.append(tr('msg_select_step')); is_valid = False
             if st.session_state.cb_rk and not selected_orders_int:
-                error_messages.append(tr("msg_select_order", "Vui lòng chọn ít nhất một bậc cho Runge-Kutta."))
-                is_valid = False
-
-
+                error_messages.append(tr("msg_select_order", "Vui lòng chọn ít nhất một bậc cho Runge-Kutta.")); is_valid = False
             if not is_valid:
-                for msg in error_messages:
-                    st.toast(msg, icon='⚠️')
+                for msg in error_messages: st.toast(msg, icon='⚠️')
             else:
-                # --- 4. Chạy mô phỏng (logic mới) ---
                 for key in ['last_calculated_c', 'last_calculated_r', 'last_calculated_alpha', 'last_calculated_beta']:
-                    if key in st.session_state:
-                        del st.session_state[key]
-                
-                # Sửa lỗi KeyError: Lấy method_short từ task đầu tiên, hoặc mặc định
+                    if key in st.session_state: del st.session_state[key]
                 first_method_short = next(iter(tasks_to_run), "Bashforth")
                 prep_ok, prep_data, calculated_params = _prepare_simulation_functions(model_data, param_inputs, first_method_short)
-                
                 if prep_ok:
                     for key, value in calculated_params.items():
                         st.session_state[f'last_calculated_{key}'] = value
-                    
                     ode_func, exact_callable, y0, t_start, t_end = prep_data
                     results_dict = {}
-
                     for method_short, steps_list in tasks_to_run.items():
-                        if not steps_list: continue # Bỏ qua nếu danh sách bước/bậc rỗng
+                        if not steps_list: continue
                         results_dict[method_short] = {}
                         for steps in sorted(list(set(steps_list))):
                             res = _perform_single_simulation(
                                 model_data, ode_func, exact_callable, y0, t_start, t_end, 
                                 method_short, steps, float(selected_h_str), selected_component
                             )
-                            if res:
-                                results_dict[method_short][steps] = res
-                    
+                            if res: results_dict[method_short][steps] = res
                     results_dict = {m: sr for m, sr in results_dict.items() if sr}
-                    
                     st.session_state.simulation_results = results_dict
                     st.session_state.validated_params = {
-                        'params': param_inputs, 
-                        'h_target': float(selected_h_str), 
-                        'model_id': model_id,
-                        'selected_component': selected_component,
-                        'tasks_run': tasks_to_run
+                        'params': param_inputs, 'h_target': float(selected_h_str), 'model_id': model_id,
+                        'selected_component': selected_component, 'tasks_run': tasks_to_run
                     }
                     st.rerun()
-                else:
-                    st.session_state.simulation_results = {}
+                else: st.session_state.simulation_results = {}
 
     results = st.session_state.get('simulation_results', {})
     if not results:
         st.info(tr('screen2_info_area_init'))
     else:
         validated_params = st.session_state.validated_params
-        # ... (giữ nguyên phần hiển thị info và các tab kết quả)
         if 'last_calculated_c' in st.session_state and validated_params.get('model_id') == 'model2':
             st.info(f"**{tr('model2_calculated_c_label')}** {st.session_state.last_calculated_c:.6g}")
         if 'last_calculated_r' in st.session_state and validated_params.get('model_id') == 'model3':
@@ -2976,31 +2947,33 @@ def show_simulation_page():
 
         can_run_dynamic = model_data.get("can_run_abm_on_screen3", False) or model_id in ['model2', 'model5']
         if can_run_dynamic:
-            if st.button(f"{tr('screen2_goto_screen3_button')} :keyboard_double_arrow_right:", use_container_width=True, type="primary"):
-                # Logic mới: Lấy phương pháp đầu tiên có kết quả để tạo dữ liệu động
+            # =============================================================
+            # SỬA LỖI 1 & 2 TẠI ĐÂY
+            if st.button(
+                label=tr("screen2_goto_screen3_button"), 
+                icon="keyboard_double_arrow_right",  # SỬA LỖI 1: Dùng tham số icon
+                width='stretch',                      # SỬA LỖI 2: Dùng width='stretch'
+                type="primary"
+            ):
+            # =============================================================
                 first_method_key = next(iter(results.keys()), None)
                 if first_method_key:
                     first_method_results = results[first_method_key]
                     highest_step = max(first_method_results.keys(), key=int) if first_method_results else None
                     if highest_step:
-                        # Lưu validated_params vào session state để Screen 3 có thể truy cập
                         st.session_state.validated_params_for_dynamic = validated_params.copy()
-                        # Đánh dấu rằng chúng ta muốn chuyển trang
                         st.session_state.page = 'dynamic_simulation'
                         st.rerun()
-                    else:
-                        st.toast("Không có kết quả hợp lệ để tạo mô phỏng động.", icon="⚠️")
-                else:
-                    st.toast("Không có kết quả hợp lệ để tạo mô phỏng động.", icon="⚠️")
+                    else: st.toast("Không có kết quả hợp lệ để tạo mô phỏng động.", icon="⚠️")
+                else: st.toast("Không có kết quả hợp lệ để tạo mô phỏng động.", icon="⚠️")
         
-        # ... (giữ nguyên các tab hiển thị đồ thị và dữ liệu)
+        # Phần hiển thị tab và đồ thị không thay đổi
         tab1, tab2, tab3, tab4 = st.tabs([
-            f"📊 {tr('screen2_plot_solution_title')}", 
-            f"📉 {tr('screen2_plot_error_title')}", 
-            f"📈 {tr('screen2_plot_order_title')}", 
-            f"🔢 {tr('screen2_show_data_button')}"
+            f"📊 {tr('screen2_plot_solution_title')}", f"📉 {tr('screen2_plot_error_title')}", 
+            f"📈 {tr('screen2_plot_order_title')}", f"🔢 {tr('screen2_show_data_button')}"
         ])
-
+        
+        # (Hàm generate_and_get_figures và các tab còn lại giữ nguyên)
         @st.cache_data
         def generate_and_get_figures(results_data_json, lang, model_id, component):
             results_data = json.loads(results_data_json)
@@ -3124,51 +3097,38 @@ def show_simulation_page():
             validated_params.get('selected_component', 'x')
         )
         
-        with tab1:
-            st.pyplot(figures['solution'])
-        with tab2:
-            st.pyplot(figures['error'])
-        with tab3:
-            st.pyplot(figures['order'])
+        with tab1: st.pyplot(figures['solution'])
+        with tab2: st.pyplot(figures['error'])
+        with tab3: st.pyplot(figures['order'])
         with tab4:
-            # Sắp xếp các phương pháp theo thứ tự mong muốn
             method_order = ["Bashforth", "Moulton", "RungeKutta"]
             sorted_methods = sorted(results.keys(), key=lambda x: method_order.index(x) if x in method_order else 99)
-            
             for method_short in sorted_methods:
                 step_results = results.get(method_short, {})
                 if not step_results: continue
-                
                 method_key_map = {"Bashforth": "ab", "Moulton": "am", "RungeKutta": "rk"}
                 abbreviation = method_key_map.get(method_short, method_short.lower())
                 method_display_name = tr(f'screen2_method_{abbreviation}')
-
                 st.subheader(method_display_name)
-
                 for step_str, res in sorted(step_results.items()):
                     step = int(step_str)
-                    
                     if method_short == "RungeKutta":
                         run_title_label = f"{tr('screen2_order_label')} {step}"
                     else:
                         run_title_label = f"{tr('screen2_steps_label')} {step}"
-                    
                     with st.expander(label=run_title_label):
                         slope_str = f"{res.get('order_slope', 'N/A'):.4f}" if isinstance(res.get('order_slope'), float) else "N/A"
                         st.markdown(f"**{tr('screen2_info_area_show_data_order')}** {slope_str}")
-                        
                         t = res.get('t_plot'); approx = res.get('approx_sol_plot'); exact = res.get('exact_sol_plot')
                         if t is not None and approx is not None and len(t) > 0:
                             df_data = {'t': t, tr('screen2_info_area_show_data_approx'): approx}
                             if exact is not None:
                                 df_data[tr('screen2_info_area_show_data_exact')] = exact
                                 df_data[tr('screen2_info_area_show_data_error')] = np.abs(np.array(approx) - np.array(exact))
-                            
                             df = pd.DataFrame(df_data)
                             st.dataframe(df.head(20).style.format("{:.6f}"), use_container_width=True, height=300)
                         else:
                             st.write(tr("screen2_info_area_show_data_no_points"))
-                
                 st.write("---")
             
 # ==============================================
