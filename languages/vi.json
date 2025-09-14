@@ -92,7 +92,7 @@
     "screen2_order2": "Bậc 2",
     "screen2_order3": "Bậc 3",
     "screen2_order4": "Bậc 4",
-    "msg_select_order": "Vui lòng chọn ít nhất một bậc cho Runge-Kutta."
+    "msg_select_order": "Vui lòng chọn ít nhất một bậc cho Runge-Kutta.",
     "screen2_back_button": "Quay lại chọn mô hình",
     "go_back_to_select": "Quay lại trang chọn mô hình",
     "screen2_goto_screen3_button": "Xem mô phỏng động",
