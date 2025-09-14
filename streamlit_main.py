@@ -2830,7 +2830,7 @@ def show_simulation_page():
                     param_inputs[key] = st.number_input(label, value=default_values.get(key, 1.0), format="%.4f", key=f"param_{model_id}_{key}")
             
             selected_component = 'x'
-			if model_id == "model6":
+            if model_id == "model6":
                 comp_data_m6 = model_data.get("components", {})
                 comp_options_m6_display = [tr(v) for v in comp_data_m6.values()]
                 comp_options_m6_keys = list(comp_data_m6.keys())
