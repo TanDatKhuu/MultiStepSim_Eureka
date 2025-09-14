@@ -3228,15 +3228,14 @@ def run_and_prepare_m5s1_animation_data(_validated_params_json):
     x0, y0 = params_s2.get('x0', 10.0), params_s2.get('y0', 0.0)
     t0, t1 = params_s2.get('t0', 0.0), params_s2.get('t1', 10.0)
 
-    # ==========================================================
-    # 1. TÍNH TOÁN LẠI t_end_final VỚI LOGIC VẬT LÝ ĐÚNG
-    # ==========================================================
+    # 1. TÍNH TOÁN t_end_final VỚI LOGIC VẬT LÝ ĐÚNG (TỪ PYSIDE6)
     t_end_final = t1
-    if u >= v: # Sửa điều kiện thành u >= v
+    if u >= v:
         time_to_cross_min = abs(x0 / v) if v != 0 else float('inf')
         t_max_reasonable = time_to_cross_min * (u / v if v != 0 else 5.0)
         t_end_final = max(t1, t_max_reasonable) * 1.2
     
+    # 2. CHẠY SOLVER ĐỂ LẤY QUỸ ĐẠO ĐẦY ĐỦ
     model_data = MODELS_DATA[LANG_VI["model5_name"]]
     ode_func = model_data["ode_func"](u, v)
     
@@ -3244,21 +3243,19 @@ def run_and_prepare_m5s1_animation_data(_validated_params_json):
         "Bashforth": { 2: AB2_system_M5, 3: AB3_system_M5, 4: AB4_system_M5, 5: AB5_system_M5 },
         "Moulton": { 2: AM2_system_M5, 3: AM3_system_M5, 4: AM4_system_M5 }
     }
-    solver_func = solver_map_sim1.get(method_short, {}).get(method_steps)
-    if not solver_func: solver_func = AB4_system_M5 # Fallback an toàn
+    solver_func = solver_map_sim1.get(method_short, {}).get(method_steps, AB4_system_M5)
 
     num_points = max(200, int(np.ceil((t_end_final - t0) / h_target)))
     t_array_full = np.linspace(t0, t_end_final, num_points + 1)
     
+    # Giả sử solver chỉ trả về x, y. Điều kiện dừng <= 0.5 vẫn được áp dụng bên trong.
     recalc_x, recalc_y = solver_func(ode_func, t_array_full, x0, y0)
     
     min_len = min(len(recalc_x), len(recalc_y))
     t_array_actual = t_array_full[:min_len]
     z_array_actual = np.column_stack((recalc_x, recalc_y))
     
-    # ==========================================================
-    # 2. TÍNH TOÁN DỮ LIỆU ĐỒ HỌA DỰA TRÊN QUỸ ĐẠO (Y HỆT PYSIDE6)
-    # ==========================================================
+    # 3. TÍNH TOÁN DỮ LIỆU ĐỒ HỌA DỰA TRÊN QUỸ ĐẠO (Y HỆT PYSIDE6)
     d_val = x0
     x_traj_min, x_traj_max = np.min(z_array_actual[:, 0]), np.max(z_array_actual[:, 0])
     y_traj_min, y_traj_max = np.min(z_array_actual[:, 1]), np.max(z_array_actual[:, 1])
