@@ -2853,10 +2853,31 @@ def show_simulation_page():
             current_defaults = MODEL_DEFAULTS.get(model_id, {})
             
             # Sử dụng key đơn giản hơn cho number_input
-            for key in internal_keys:
-                label = tr(f"{model_id}_param_{key}", key) # Cố gắng tìm key dịch theo format model_param, fallback về key
-                default_val = current_defaults.get(key, 1.0)
-                param_inputs[key] = st.number_input(label, value=float(default_val), step=1e-4, format="%.4f", key=f"param_{key}")
+            if model_id == "model4":
+                cols_m4 = st.columns(2)
+                # Dùng lại logic cũ để lấy label, vì nó ổn định hơn
+                internal_key_to_label_m4 = {
+                    "m": tr("model4_param_m"), "l": tr("model4_param_l"),
+                    "a": tr("model4_param_a"), "s": tr("model4_param_s"),
+                    "G": tr("model4_param_G"), "Y0": tr("model4_param_Y0"),
+                    "dY0": tr("model4_param_dY0"), "t0": tr("model4_param_t0"),
+                    "t1": tr("model4_param_t1"),
+                }
+                for i, key in enumerate(internal_keys):
+                    label = internal_key_to_label_m4.get(key, key)
+                    with cols_m4[i % 2]:
+                        default_val = current_defaults.get(key, 0.0)
+                        param_inputs[key] = st.number_input(label, value=float(default_val), step=1e-4, format="%.4f", key=f"param_{key}")
+            else:
+                # Dùng logic cũ, ổn định để lấy label từ param_keys_...
+                param_labels_key = f"param_keys_{st.session_state.lang}"
+                all_param_labels = model_data.get(param_labels_key, model_data.get("param_keys_vi", []))
+                
+                for i, key in enumerate(internal_keys):
+                    # Lấy label từ danh sách đã được dịch
+                    label = all_param_labels[i] if i < len(all_param_labels) else key
+                    default_val = current_defaults.get(key, 1.0)
+                    param_inputs[key] = st.number_input(label, value=float(default_val), step=1e-4, format="%.4f", key=f"param_{key}")
 
             selected_component = 'x'
             if model_id == "model6":
