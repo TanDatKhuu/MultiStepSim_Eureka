@@ -3621,8 +3621,16 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
             MAX_GIF_FRAMES = 300 # Đặt số frame tối đa cho GIF, 300 là con số hợp lý (khoảng 30s ở 10fps)
             
             # Lấy dữ liệu gốc
-            original_t = sim_data.get('t_plot') or sim_data.get('time_points')
-            original_all_components = sim_data.get('approx_sol_plot_all_components') or sim_data.get('state_history')
+            original_t = None
+            if sim_data.get('t_plot') is not None:
+                original_t = sim_data.get('t_plot')
+            elif sim_data.get('time_points') is not None:
+                original_t = sim_data.get('time_points')
+            original_all_components = None
+            if sim_data.get('approx_sol_plot_all_components') is not None:
+                 original_all_components = sim_data.get('approx_sol_plot_all_components')
+            elif sim_data.get('state_history') is not None:
+                 original_all_components = sim_data.get('state_history')
 
             if original_t is None or original_all_components is None:
                 return None, {}
@@ -3634,18 +3642,18 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                 st.info(f"Tối ưu hóa: Lấy {MAX_GIF_FRAMES} mẫu từ {num_original_points} điểm dữ liệu.")
                 indices = np.linspace(0, num_original_points - 1, MAX_GIF_FRAMES, dtype=int)
                 
-                # Tạo sim_data mới đã được lấy mẫu
-                sampled_sim_data = sim_data.copy() # Sao chép các thông tin khác
-                if 't_plot' in sampled_sim_data:
-                    sampled_sim_data['t_plot'] = original_t[indices]
-                if 'time_points' in sampled_sim_data:
-                    sampled_sim_data['time_points'] = original_t[indices]
-                if 'approx_sol_plot_all_components' in sampled_sim_data:
-                    sampled_sim_data['approx_sol_plot_all_components'] = [comp[indices] for comp in original_all_components]
-                if 'state_history' in sampled_sim_data:
-                    sampled_sim_data['state_history'] = original_all_components[indices]
+                sampled_sim_data = sim_data.copy()
                 
-                sim_data = sampled_sim_data # Ghi đè sim_data bằng phiên bản đã lấy mẫu
+                # Cập nhật các key có thể có
+                if 't_plot' in sampled_sim_data: sampled_sim_data['t_plot'] = original_t[indices]
+                if 'time_points' in sampled_sim_data: sampled_sim_data['time_points'] = original_t[indices]
+                
+                # Xử lý cho list of arrays và array 2D
+                if isinstance(original_all_components, list): # Dành cho model5_sim1
+                    sampled_sim_data['approx_sol_plot_all_components'] = [comp[indices] for comp in original_all_components]
+                else: # Dành cho model5_sim2 (state_history)
+                    sampled_sim_data['state_history'] = original_all_components[indices]
+                sim_data = sampled_sim_data
 
             # --- Xác định số lượng frame tối đa (sử dụng dữ liệu đã lấy mẫu) ---
             num_frames = 0
