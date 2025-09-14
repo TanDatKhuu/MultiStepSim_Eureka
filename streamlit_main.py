@@ -2982,12 +2982,12 @@ def show_simulation_page():
                 font_prop = FontProperties(fname=font_path)
                 plt.rcParams['font.family'] = font_prop.get_name()
                 plt.rcParams['axes.unicode_minus'] = False
-			results_data = json.loads(results_data_json)
-		    
-            figs = {}
+	
             translations = load_language_file(lang_code)
             def _tr(key): return translations.get(key, key)
-		
+            results_data = json.loads(results_data_json)
+		    
+            figs = {}
 		    # --- 1. Tạo danh sách tất cả các lần chạy và gán màu ---
             all_runs = []
             for method_short, step_results in results_data.items():
