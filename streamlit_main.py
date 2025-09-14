@@ -3805,7 +3805,7 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                 # --- Ghi frame vào GIF ---
                 fig.canvas.draw()
                 frame_buf = io.BytesIO()
-                fig.tight_layout(pad=1.5)
+                #fig.tight_layout(pad=1.5)
                 fig.savefig(frame_buf, format='png')
                 frame_buf.seek(0)
                 writer.append_data(imageio.imread(frame_buf))
