@@ -3148,23 +3148,41 @@ def show_simulation_page():
         with tab3:
             st.pyplot(figures['order'])
         with tab4:
-            for step_str, res in sorted(results.items()):
-                step = int(step_str)
-                with st.expander(f"**Adam-{validated_params['method_short']} {step} {tr('screen2_info_area_show_data_textCont1')}**"):
-                    slope_str = f"{res.get('order_slope', 'N/A'):.4f}" if isinstance(res.get('order_slope'), float) else "N/A"
-                    st.markdown(f"**{tr('screen2_info_area_show_data_order')}** {slope_str}")
-                    
-                    t = res.get('t_plot'); approx = res.get('approx_sol_plot'); exact = res.get('exact_sol_plot')
-                    if t is not None and approx is not None and len(t) > 0:
-                        df_data = {'t': t, tr('screen2_info_area_show_data_approx'): approx}
-                        if exact is not None:
-                            df_data[tr('screen2_info_area_show_data_exact')] = exact
-                            df_data[tr('screen2_info_area_show_data_error')] = np.abs(np.array(approx) - np.array(exact))
+            # Lặp qua các phương pháp trong dictionary kết quả
+            for method_short, step_results in sorted(results.items()):
+                # Lấy tên hiển thị của phương pháp
+                method_key_map = {"Bashforth": "ab", "Moulton": "am", "RungeKutta": "rk"}
+                abbreviation = method_key_map.get(method_short, method_short.lower())
+                method_display_name = tr(f'screen2_method_{abbreviation}')
+
+                # Expander cho mỗi phương pháp
+                with st.expander(f"**{method_display_name}**"):
+                    # Lặp qua các bậc/số bước của phương pháp đó
+                    for step_str, res in sorted(step_results.items()):
+                        step = int(step_str)
                         
-                        df = pd.DataFrame(df_data)
-                        st.dataframe(df.head(20).style.format("{:.6f}"), use_container_width=True, height=400)
-                    else:
-                        st.write(tr("screen2_info_area_show_data_no_points"))
+                        # Xây dựng tiêu đề cho từng lần chạy
+                        if method_short == "RungeKutta":
+                            run_title = f"{tr('screen2_order_label')} {step}"
+                        else:
+                            run_title = f"{tr('screen2_steps_label')} {step}"
+
+                        st.markdown(f"#### {run_title}")
+                        
+                        slope_str = f"{res.get('order_slope', 'N/A'):.4f}" if isinstance(res.get('order_slope'), float) else "N/A"
+                        st.markdown(f"**{tr('screen2_info_area_show_data_order')}** {slope_str}")
+                        
+                        t = res.get('t_plot'); approx = res.get('approx_sol_plot'); exact = res.get('exact_sol_plot')
+                        if t is not None and approx is not None and len(t) > 0:
+                            df_data = {'t': t, tr('screen2_info_area_show_data_approx'): approx}
+                            if exact is not None:
+                                df_data[tr('screen2_info_area_show_data_exact')] = exact
+                                df_data[tr('screen2_info_area_show_data_error')] = np.abs(np.array(approx) - np.array(exact))
+                            
+                            df = pd.DataFrame(df_data)
+                            st.dataframe(df.head(20).style.format("{:.6f}"), use_container_width=True, height=400)
+                        else:
+                            st.write(tr("screen2_info_area_show_data_no_points"))
             
 # ==============================================
 #           PHẦN 4: TRANG MÔ PHỎNG ĐỘNG
