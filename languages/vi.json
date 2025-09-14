@@ -86,6 +86,8 @@
     "model6_component_A": "Nồng độ A ($y_A$)",
     "model6_component_B": "Nồng độ B ($y_B$)",
     "model6_component_C": "Nồng độ C ($y_C$)",
+    "screen2_plot_exact_sol_label": "Nghiệm chính xác",
+    "screen2_plot_ref_sol_label": "Nghiệm tham chiếu (RK5)",
     "screen2_details_group_rk": "2. Chi tiết Runge-Kutta",
     "screen2_order_label": "Bậc:",
     "screen2_select_all_steps_cb": "Tất cả",
