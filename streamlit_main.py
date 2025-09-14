@@ -2490,9 +2490,9 @@ def _prepare_simulation_functions(model_data, input_params, selected_method_shor
         
         elif model_id == "model2":
             number_of_double_times = 5.0 if selected_method_short == "Bashforth" else 2.0
-            denominator_b = input_params['t₁']
-            if denominator_b <= 1e-9 or input_params['x₀'] < 0: raise ValueError("t₁ > 0 và x₀ >= 0")
-            x0_cbrt_safe = (input_params['x₀'] + 1e-15)**(1.0/3.0)
+            denominator_b = input_params['t1']
+            if denominator_b <= 1e-9 or input_params['x0'] < 0: raise ValueError("t1 > 0 và x0 >= 0")
+            x0_cbrt_safe = (input_params['x0'] + 1e-15)**(1.0/3.0)
             doubling_factor_N_cbrt = (2.0**number_of_double_times)**(1.0/3.0)
             lower_c = 3.0 * (doubling_factor_N_cbrt - 1.0) * x0_cbrt_safe / denominator_b
             doubling_factor_Nplus1_cbrt = (2.0**(number_of_double_times + 1.0))**(1.0/3.0)
