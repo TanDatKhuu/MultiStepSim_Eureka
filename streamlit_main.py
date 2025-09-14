@@ -3052,6 +3052,7 @@ def show_simulation_page():
 		            if res:
 		                label = ""
 		                step_or_order = int(step_str)
+		                # Sửa logic để thêm RK vào label
 		                if method_short == "RungeKutta":
 		                    label = f"RK{step_or_order}"
 		                else:
@@ -3076,7 +3077,9 @@ def show_simulation_page():
 		    if model_id == "model5":
 		        sol_ylabel_text += f" ({component.upper()})"
 		    elif model_id == "model6":
-		        lang_key = MODELS_DATA[LANG_VI["model6_name"]]["components"].get(component, "")
+		        # Truy cập MODELS_DATA từ global scope để lấy thông tin components
+		        model6_data = MODELS_DATA.get(LANG_VI["model6_name"], {})
+		        lang_key = model6_data.get("components", {}).get(component, "")
 		        sol_ylabel_text = _tr(lang_key)
 		
 		    exact_label_key = "screen2_plot_ref_sol_label" if model_id == "model5" else "screen2_plot_exact_sol_label"
@@ -3110,7 +3113,8 @@ def show_simulation_page():
 		    for i, run in enumerate(all_runs):
 		        res, color, label = run['result'], colors[i], run['label']
 		        n_vals, err = res.get('n_values_convergence'), res.get('errors_convergence')
-		        if n_vals is not None and len(n_vals) > 0:
+		        # Sửa lỗi: Cần đảm bảo err cũng là một list/array
+		        if n_vals is not None and err is not None and len(n_vals) > 0 and len(err) > 0:
 		            ax_err.plot(n_vals, err, marker='.', ms=3, ls='-', color=color, label=label)
 		            
 		    ax_err.set_title(_tr('screen2_plot_error_title'))
@@ -3127,14 +3131,17 @@ def show_simulation_page():
 		    for i, run in enumerate(all_runs):
 		        res, color, label = run['result'], colors[i], run['label']
 		        log_h, log_err = res.get('log_h_convergence'), res.get('log_error_convergence')
-		        if log_h is not None and len(log_h) >= 2:
+		        if log_h is not None and log_err is not None and len(log_h) >= 2 and len(log_err) >= 2:
 		            slope = res.get('order_slope', 0)
 		            fit_label_text = _tr('screen2_plot_order_fit_label_suffix').format(slope)
 		            fit_label_mathtext = fit_label_text.replace("O(h<sup>", "$O(h^{").replace("</sup>)", "})$")
 		            ax_ord.plot(log_h, log_err, 'o', ms=3, color=color, label=f"{label} {_tr('screen2_plot_order_data_label_suffix')}")
 		            if np.isfinite(slope):
-		                fit_line = np.polyval(np.polyfit(log_h, log_err, 1), log_h)
-		                ax_ord.plot(log_h, fit_line, '-', color=color, label=fit_label_mathtext)
+		                try:
+		                    fit_line = np.polyval(np.polyfit(log_h, log_err, 1), log_h)
+		                    ax_ord.plot(log_h, fit_line, '-', color=color, label=fit_label_mathtext)
+		                except Exception as e_polyfit:
+		                    print(f"Could not perform polyfit for {label}: {e_polyfit}")
 		                
 		    ax_ord.set_title(_tr('screen2_plot_order_title'))
 		    ax_ord.set_xlabel(_tr('screen2_plot_log_h_axis'))
