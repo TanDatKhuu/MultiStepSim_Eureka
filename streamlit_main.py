@@ -3831,8 +3831,8 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                         _tr('screen3_m5_boat_speed'): {'value': f"{validated_params['params']['v']:.2f}"},
                         _tr('screen3_m5_water_speed'): {'value': f"{validated_params['params']['u']:.2f}"},
                         _tr('screen3_m5_crossing_time'): {'value': f"{sim_data['t_plot'][-1]:.2f} {time_unit}"},
-                        _tr('screen3_m5_boat_reaches_target'): {'value': _tr('answer_yes') if abs(x_path[-1]) < 0.01 * validated_params['params']['x0'] else _tr('answer_no'), 'size_class': 'metric-value-small'},
-                        _tr('screen3_m5_boat_final_pos'): {'value': f"({x_path[-1]:.2f}, {y_path[-1]:.2f})", 'size_class': 'metric-value-small'}
+                        _tr('screen3_m5_boat_reaches_target'): {'value': _tr('answer_yes') if abs(x_path[-1]) < 0.01 * validated_params['params']['x0'] else _tr('answer_no')},
+                        _tr('screen3_m5_boat_final_pos'): {'value': f"({x_path[-1]:.2f}, {y_path[-1]:.2f})"}
                     }
                 else: final_stats = {}
             elif model_id == 'model5' and st.session_state.m5_scenario == 2:
@@ -3849,8 +3849,8 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                     _tr('screen3_m5_submarine_speed'): {'value': f"{st.session_state.m5s2_params['v_tn_max']:.2f}"},
                     _tr('screen3_m5_destroyer_speed'): {'value': f"{st.session_state.m5s2_params['v_kt']:.2f}"},
                     _tr('screen3_m5_catch_time'): {'value': f"{sim_data['time_points'][-1]:.2f} {time_unit}"},
-                    _tr('screen3_m5_destroyer_catches_submarine'): {'value': status_str, 'size_class': 'metric-value-small'},
-                    _tr('screen3_m5_catch_point'): {'value': catch_point_str, 'size_class': 'metric-value-small'}
+                    _tr('screen3_m5_destroyer_catches_submarine'): {'value': status_str},
+                    _tr('screen3_m5_catch_point'): {'value': catch_point_str}
                 }
             else:
                 final_stats = {}
