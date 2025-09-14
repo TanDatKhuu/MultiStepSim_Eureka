@@ -3554,7 +3554,7 @@ def run_and_store_model5_scenario2_results():
     num_solver_steps = int(np.ceil(30 * st.session_state.m5s2_params['simulation_duration']))
     num_solver_steps = min(num_solver_steps, 3000)
     st.info(f"Debug: Solver sẽ chạy với {num_solver_steps} bước.")
-	t_array_solver = np.linspace(st.session_state.m5s2_params['t_start'], st.session_state.m5s2_params['t_end'], num_solver_steps + 1)
+    t_array_solver = np.linspace(st.session_state.m5s2_params['t_start'], st.session_state.m5s2_params['t_end'], num_solver_steps + 1)
     initial_state = np.array([z0_kt_sim[0], z0_kt_sim[1], z_tn_actual_start[0], z_tn_actual_start[1]])
 
     st.session_state.m5s2_results = _run_and_cache_m5_sim2(
