@@ -43,27 +43,6 @@ class FakeSessionState:
 
 st.session_state = FakeSessionState()
 
-# ==============================================
-#           PHẦN 1: CÀI ĐẶT VÀ CÁC HÀM LÕI
-# ==============================================
-
-# --- 1. IMPORTS ---
-import streamlit as st
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
-from matplotlib.lines import Line2D
-from matplotlib.patches import Circle as MplCircle 
-import os
-from datetime import datetime
-import random
-import json
-import time # Cần cho animation
-import base64
-import imageio  # Thêm dòng này
-import io       # Thêm dòng này
-
 def html_to_latex(html_string):
     """Chuyển đổi một số thẻ HTML đơn giản sang cú pháp LaTeX."""
     s = html_string.replace('<br>', r' \\ ') # Xuống dòng trong LaTeX
@@ -100,7 +79,11 @@ LANG_EN = load_language_file('en')
 
 def tr(key):
     return st.session_state.translations.get(key, key)
-
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return json.JSONEncoder.default(self, obj)
 MODEL_DEFAULTS = {
     "model1": {"O0": 1091.0, "k": 0.073, "t0": 0.0, "t1": 10.0},
     "model2": {"x0": 1.0, "t0": 0.0, "t1": 10.0},
@@ -3245,7 +3228,22 @@ if __name__ == "__main__":
             # Cập nhật state giả lập với các tham số đã tính
             for key, value in calculated_params.items():
                 st.session_state[f'last_calculated_{key}'] = value
-            
+            if model_id in ['model2', 'model3']:
+	            print(f"  Chạy mô phỏng tĩnh cho {model_id} để lấy dữ liệu...")
+	            static_result = _perform_single_simulation(
+	                model_data, ode_func, exact_callable, y0, t_start, t_end,
+	                "Bashforth", 4, 0.01, 'x'
+	            )
+	            if static_result:
+	                st.session_state.simulation_results = {
+	                    "Bashforth": {
+	                        4: static_result
+	                    }
+	                }
+	                print("  Lấy dữ liệu mô phỏng tĩnh thành công.")
+	            else:
+	                print(f"  LỖI: Không thể tạo dữ liệu tĩnh cho {model_id}. Bỏ qua.")
+	                continue
             # Bước 3: Tạo `validated_params` như thể nó được truyền từ Screen 2 sang Screen 3
             validated_params = {
                 'params': default_params,
