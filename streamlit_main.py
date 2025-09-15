@@ -3942,6 +3942,48 @@ def show_dynamic_simulation_page():
         return
 
     model_id = validated_params.get("model_id")
+	# ==========================================================
+    # === BẮT ĐẦU THÊM CODE MỚI ĐỂ HIỂN THỊ GIF CÓ SẴN ===
+    # ==========================================================
+    
+    # 1. Xác định tên file GIF mặc định cho model hiện tại
+    pregen_gif_dir = "pre_generated_gifs"
+    default_gif_filename = ""
+    if model_id == 'model2':
+        default_gif_filename = "model2_default.gif"
+    elif model_id == 'model3':
+        default_gif_filename = "model3_default.gif"
+    elif model_id == 'model5':
+        # Đối với Model 5, cần kiểm tra kịch bản (scenario)
+        scenario = st.session_state.get('m5_scenario', 1)
+        default_gif_filename = f"model5_sim{scenario}_default.gif"
+    
+    # 2. So sánh tham số hiện tại với tham số mặc định
+    is_default_params = False
+    current_params = validated_params.get('params', {})
+    default_params_for_model = MODEL_DEFAULTS.get(model_id, {})
+    if current_params == default_params_for_model:
+        is_default_params = True
+        
+    # 3. Nếu đang dùng tham số mặc định VÀ file GIF tồn tại, thì hiển thị nó và dừng
+    if default_gif_filename and is_default_params:
+        gif_path = os.path.join(base_path, pregen_gif_dir, default_gif_filename)
+        
+        if os.path.exists(gif_path):
+            st.header(tr('simulation_results_title'))
+            st.subheader(tr(f"{model_id}_name"))
+            
+            st.info(tr("info_showing_default_gif", "Hiển thị mô phỏng mặc định. Để tạo mô phỏng với tham số khác, vui lòng quay lại và thay đổi giá trị đầu vào."))
+            
+            with open(gif_path, "rb") as file:
+                st.image(file.read())
+            
+            # Thêm nút quay lại
+            if st.button(f"ᐊ {tr('screen3_back_button')}"):
+                 st.session_state.page = 'simulation'
+                 st.rerun()
+
+            st.stop() # Dừng thực thi phần còn lại của trang
     model_data = MODELS_DATA.get(st.session_state.get("selected_model_key"))
     is_processing = st.session_state.get('gif_is_processing', False)
     # --- Bố cục giao diện chính ---
