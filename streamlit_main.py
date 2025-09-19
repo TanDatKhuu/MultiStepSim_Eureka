@@ -3678,7 +3678,7 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                 progress_text.text(f"{_tr('gif_generating_spinner')} ({frame_idx + 1}/{num_frames})")
                 ax.clear()
                 time_unit = _tr("time_unit_seconds")
-				cell = _tr("screen3_legend_model2_cell")
+                cell = _tr("screen3_legend_model2_cell")
                 if model_id == 'model2':
                     t_data, y_data = sim_data['t_plot'], sim_data['approx_sol_plot']
                     target_n = int(round(y_data[frame_idx]))
