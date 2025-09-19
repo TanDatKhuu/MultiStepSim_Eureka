@@ -1,0 +1,17 @@
+{
+    "Submarine velocity:": {
+        "value": "2.00"
+    },
+    "Destroyer velocity:": {
+        "value": "4.00"
+    },
+    "Simulation time:": {
+        "value": "14.03 (Time unit)"
+    },
+    "Does the destroyer catch the submarine?": {
+        "value": "Yes"
+    },
+    "Catch point (coordinates):": {
+        "value": "(-45.67, -22.78)"
+    }
+}

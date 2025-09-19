@@ -1,0 +1,14 @@
+{
+    "Initial total population:": {
+        "value": 51
+    },
+    "Number of susceptible individuals:": {
+        "value": 2
+    },
+    "Number of infected individuals:": {
+        "value": 49
+    },
+    "Real time elapsed (seconds):": {
+        "value": "40.00 (Time unit)"
+    }
+}

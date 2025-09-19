@@ -1,0 +1,17 @@
+{
+    "Vận tốc tàu ngầm:": {
+        "value": "2.00"
+    },
+    "Vận tốc tàu khu trục:": {
+        "value": "4.00"
+    },
+    "Thời gian mô phỏng:": {
+        "value": "7.43 (Đơn vị thời gian)"
+    },
+    "Tàu khu trục có bắt được tàu ngầm không?": {
+        "value": "Có"
+    },
+    "Điểm bắt được (tọa độ):": {
+        "value": "(31.51, -3.21)"
+    }
+}
