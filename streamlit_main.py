@@ -3629,10 +3629,12 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                             if current_max_step > highest_step_found:
                                 highest_step_found = current_max_step; best_method_key = method_key
                     if best_method_key is not None and highest_step_found != -1:
-                        best_sim_data = results[best_method_key][highest_step_found]
+                        best_sim_data = results[best_method_key][str(highest_step_found)]
                 sim_data = best_sim_data if best_sim_data is not None else {}
             
-            if not sim_data: return None, {}
+            if not sim_data: 
+                print("Error: sim_data is empty after trying to extract best result.")
+                return None, {}
 
             # === BẮT ĐẦU THAY ĐỔI: LẤY MẪU DỮ LIỆU ===
             MAX_GIF_FRAMES = 300 # Đặt số frame tối đa cho GIF, 300 là con số hợp lý (khoảng 30s ở 10fps)
