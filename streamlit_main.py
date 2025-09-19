@@ -3583,7 +3583,7 @@ def run_and_store_model5_scenario2_results():
         _traj_params_dict_json=traj_params_json
     )
 	
-def create_animation_gif(lang_code, model_id, model_data, validated_params, speed_multiplier):
+def create_animation_gif(lang_code, model_id, model_data, validated_params, speed_multiplier,simulation_results_from_page2):
     # --- CÀI ĐẶT FONT VÀ HÀM DỊCH NGÔN NGỮ CỤC BỘ ---
     font_path = os.path.join(base_path, "fonts", "DejaVuSans.ttf")
     if os.path.exists(font_path):
@@ -3619,7 +3619,7 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                     run_and_store_model5_scenario2_results()
                 sim_data = st.session_state.get('m5s2_results', {})
             else: 
-                results = st.session_state.get('simulation_results', {})
+                results = simulation_results_from_page2
                 best_sim_data = None
                 if results:
                     highest_step_found = -1; best_method_key = None
@@ -3940,12 +3940,13 @@ def show_dynamic_simulation_page():
         
         # 2. Luôn dọn dẹp state của trang mô phỏng tĩnh, vì nó là "trang mẹ"
         #    của trang mô phỏng động.
-        st.session_state.simulation_results = {}
-        st.session_state.validated_params = {}
-        static_keys_to_clear = [k for k in st.session_state if k.startswith('last_calculated_')]
-        for key in static_keys_to_clear:
-            if key in st.session_state:
-                del st.session_state[key]
+        if destination_page == "model_selection":
+            st.session_state.simulation_results = {}
+            st.session_state.validated_params = {}
+            static_keys_to_clear = [k for k in st.session_state if k.startswith('last_calculated_')]
+            for key in static_keys_to_clear:
+                if key in st.session_state:
+                    del st.session_state[key]
 
         # 3. Đặt trang mới và rerun để áp dụng thay đổi ngay lập tức
         st.session_state.page = destination_page
@@ -4102,9 +4103,10 @@ def show_dynamic_simulation_page():
                     final_stats = {}
             else:
                 speed_multiplier = st.session_state.get('speed_multiplier', 1.0)
+	            results_page2 = st.session_state.get('simulation_results', {})
                 gif_bytes, final_stats = create_animation_gif(
                     st.session_state.lang, model_id, model_data, 
-                    validated_params, speed_multiplier
+                    validated_params, speed_multiplier,simulation_results_from_page2=results_page2
                 )
             st.session_state.gif_is_processing = False
             if gif_bytes:
