@@ -4103,7 +4103,7 @@ def show_dynamic_simulation_page():
                     final_stats = {}
             else:
                 speed_multiplier = st.session_state.get('speed_multiplier', 1.0)
-	            results_page2 = st.session_state.get('simulation_results', {})
+                results_page2 = st.session_state.get('simulation_results', {})
                 gif_bytes, final_stats = create_animation_gif(
                     st.session_state.lang, model_id, model_data, 
                     validated_params, speed_multiplier,simulation_results_from_page2=results_page2
