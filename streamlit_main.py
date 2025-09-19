@@ -3972,44 +3972,29 @@ def show_dynamic_simulation_page():
     # ==========================================================
     
     is_default_case = False
-    default_gif_filename = ""
-    
+    default_gif_path = None
     current_params = validated_params.get('params', {})
     all_presets_for_model = MODEL_DEFAULTS.get(model_id, {})
     
-    # Lặp qua các bộ preset để tìm sự trùng khớp
     for preset_key, preset_values in all_presets_for_model.items():
         if all(current_params.get(key) == value for key, value in preset_values.items()):
             is_default_case = True
-            
-            # Xây dựng tên file GIF
             if model_id == 'model5':
                 scenario = st.session_state.get('m5_scenario', 1)
-                default_gif_filename = f"{model_id}_sim{scenario}_{preset_key}.gif"
+                filename = f"{model_id}_sim{scenario}_{preset_key}.gif"
             else:
-                default_gif_filename = f"{model_id}_{preset_key}.gif"
+                filename = f"{model_id}_{preset_key}.gif"
             
-            break # Dừng lại khi tìm thấy
+            lang_code = st.session_state.lang
+            gif_path = os.path.join(base_path, "pre_generated_gifs", lang_code, filename)
+            
+            if os.path.exists(gif_path):
+                default_gif_path = gif_path
+            break
+    
+    st.session_state.is_default_case = is_default_case
+    st.session_state.default_gif_path = default_gif_path
 
-    # Nếu tìm thấy một trường hợp mặc định và file tồn tại...
-    if is_default_case and default_gif_filename:
-        lang_code = st.session_state.lang
-        pregen_gif_dir = os.path.join("pre_generated_gifs", lang_code)
-        gif_path = os.path.join(base_path, pregen_gif_dir, default_gif_filename)
-        
-        if os.path.exists(gif_path):
-            st.header(tr('simulation_results_title'))
-            st.subheader(tr(f"{model_id}_name"))
-            
-            st.info(tr("info_showing_default_gif"))
-            
-            with open(gif_path, "rb") as file:
-                st.image(file.read())
-            
-            if st.button(f"ᐊ {tr('screen3_back_button')}"):
-                 _cleanup_and_navigate('simulation')
-            st.stop() # Dừng, không hiển thị phần điều khiển tạo GIF
-    model_data = MODELS_DATA.get(st.session_state.get("selected_model_key"))
     is_processing = st.session_state.get('gif_is_processing', False)
     # --- Bố cục giao diện chính ---
     header_cols = st.columns([1.5, 4, 1.5])
@@ -4086,20 +4071,27 @@ def show_dynamic_simulation_page():
 
     # --- Cột hiển thị chính ---
     with col_display:
-        # Highlight: Sửa lại logic hiển thị
-        # Ưu tiên kiểm tra cờ yêu cầu tạo GIF trước
         if st.session_state.get('generate_gif_request', False):
-            speed_multiplier = st.session_state.get('speed_multiplier', 1.0)
-            # Hàm create_animation_gif sẽ tự điền vào các placeholder nó tạo ra
-            gif_bytes, final_stats = gif_bytes, final_stats = create_animation_gif(
-                st.session_state.lang, # Truyền mã ngôn ngữ hiện tại
-                model_id, 
-                model_data, 
-                validated_params, 
-                speed_multiplier
-            )
-            
+            # LOGIC XỬ LÝ KHI NÚT ĐƯỢC NHẤN
             st.session_state.generate_gif_request = False # Reset cờ
+            
+            gif_bytes, final_stats = None, None
+
+            if st.session_state.get('is_default_case') and st.session_state.get('default_gif_path'):
+                # Trường hợp 1: Dùng GIF có sẵn
+                st.info(tr("info_loading_default_gif", "Tải mô phỏng mặc định..."))
+                with open(st.session_state.default_gif_path, "rb") as f:
+                    gif_bytes = f.read()
+                # (Chúng ta chưa có stats cho file có sẵn, có thể cải tiến sau)
+                final_stats = {"Thông báo": {"value": tr("info_showing_default_gif_short", "Hiển thị kết quả mặc định.")}}
+            else:
+                # Trường hợp 2: Tạo GIF mới
+                speed_multiplier = st.session_state.get('speed_multiplier', 1.0)
+                gif_bytes, final_stats = create_animation_gif(
+                    st.session_state.lang, model_id, model_data, 
+                    validated_params, speed_multiplier
+                )
+            
             st.session_state.gif_is_processing = False
             if gif_bytes:
                 st.session_state.generated_gif = gif_bytes
@@ -4108,16 +4100,15 @@ def show_dynamic_simulation_page():
             else:
                 st.error(tr("gif_generation_error"))
                 info_placeholder.error(tr("gif_generation_error"))
-                st.rerun()
 
         elif 'generated_gif' in st.session_state and st.session_state.generated_gif:
-            # Nếu đã có GIF, hiển thị nó
+            # HIỂN THỊ KẾT QUẢ SAU KHI ĐÃ CÓ
             st.image(st.session_state.generated_gif)
             final_stats = st.session_state.get('final_anim_stats', {})
             if final_stats:
                 display_custom_metric(info_placeholder, final_stats)
         else:
-            # Trạng thái ban đầu
+            # TRẠNG THÁI BAN ĐẦU
             plot_placeholder = st.empty()
             with plot_placeholder.container():
                 fig, ax = plt.subplots(figsize=(8, 6), dpi=100)
