@@ -3967,7 +3967,7 @@ def show_dynamic_simulation_page():
         return
 
     model_id = validated_params.get("model_id")
-	model_data = MODELS_DATA.get(st.session_state.get("selected_model_key"))
+    model_data = MODELS_DATA.get(st.session_state.get("selected_model_key"))
 	# ==========================================================
     # === BẮT ĐẦU THÊM CODE MỚI ĐỂ HIỂN THỊ GIF CÓ SẴN ===
     # ==========================================================
