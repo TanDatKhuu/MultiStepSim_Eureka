@@ -4072,23 +4072,32 @@ def show_dynamic_simulation_page():
     # --- Cột hiển thị chính ---
     with col_display:
         if st.session_state.get('generate_gif_request', False):
-            # LOGIC XỬ LÝ KHI NÚT ĐƯỢC NHẤN
-            st.session_state.generate_gif_request = False # Reset cờ
+            st.session_state.generate_gif_request = False
             
             gif_bytes, final_stats = None, None
 
+            # =========================================================================
+            # HIGHLIGHT: CẬP NHẬT LOGIC ĐỂ TẢI CẢ STATS
+            # =========================================================================
             if st.session_state.get('is_default_case') and st.session_state.get('default_gif_path'):
-                # Trường hợp 1: Dùng GIF có sẵn
+                # Trường hợp 1: Dùng file có sẵn
                 with open(st.session_state.default_gif_path, "rb") as f:
                     gif_bytes = f.read()
-                final_stats = {} 
+                
+                # Tải thông tin từ file JSON nếu có
+                if st.session_state.get('default_stats_path'):
+                    with open(st.session_state.default_stats_path, "r", encoding="utf-8") as f:
+                        final_stats = json.load(f)
+                else:
+                    final_stats = {} # Nếu không có file stats, để trống
             else:
-                # Trường hợp 2: Tạo GIF mới
+                # Trường hợp 2: Tạo mới
                 speed_multiplier = st.session_state.get('speed_multiplier', 1.0)
                 gif_bytes, final_stats = create_animation_gif(
                     st.session_state.lang, model_id, model_data, 
                     validated_params, speed_multiplier
                 )
+            # =========================================================================
             
             st.session_state.gif_is_processing = False
             if gif_bytes:
@@ -4100,13 +4109,13 @@ def show_dynamic_simulation_page():
                 info_placeholder.error(tr("gif_generation_error"))
 
         elif 'generated_gif' in st.session_state and st.session_state.generated_gif:
-            # HIỂN THỊ KẾT QUẢ SAU KHI ĐÃ CÓ
+            # HIỂN THỊ KẾT QUẢ (Không đổi)
             st.image(st.session_state.generated_gif)
             final_stats = st.session_state.get('final_anim_stats', {})
             if final_stats:
                 display_custom_metric(info_placeholder, final_stats)
         else:
-            # TRẠNG THÁI BAN ĐẦU
+            # TRẠNG THÁI BAN ĐẦU (Không đổi)
             plot_placeholder = st.empty()
             with plot_placeholder.container():
                 fig, ax = plt.subplots(figsize=(8, 6), dpi=100)
@@ -4115,7 +4124,6 @@ def show_dynamic_simulation_page():
                 st.pyplot(fig)
             with info_placeholder.container():
                 st.info(tr("press_generate_to_see_info"))
-
 # =========================================================================
 # Highlight: KẾT THÚC CẬP NHẬT VÒNG LẶP ANIMATION
 # =========================================================================
