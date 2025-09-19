@@ -2884,11 +2884,18 @@ def show_simulation_page():
             selected_h_str = st.radio(tr('screen2_h_label'), options=h_values, index=2, horizontal=True)
             
             st.header(tr('screen2_params_group'))
-			#Lấy tất cả các bộ preset cho model hiện tại
+			# Lấy dictionary chứa các bộ preset cho model hiện tại
             default_presets = MODEL_DEFAULTS.get(model_id, {})
             
-            # Luôn lấy bộ preset ĐẦU TIÊN làm giá trị mặc định để hiển thị
-            current_defaults = next(iter(default_presets.values()), {})
+            # Logic mới:
+            # - Nếu là Model 5, nó có nhiều preset. Lấy preset đầu tiên.
+            # - Với các model khác, nó có cấu trúc {"default": {...}}. Lấy dictionary bên trong "default".
+            if model_id == "model5":
+                # Luôn lấy bộ preset đầu tiên làm giá trị mặc định để hiển thị
+                current_defaults = next(iter(default_presets.values()), {})
+            else:
+                # Lấy trực tiếp từ key "default"
+                current_defaults = default_presets.get("default", {})
             param_inputs = {}
             internal_keys = model_data.get("internal_param_keys", [])
             current_defaults = MODEL_DEFAULTS.get(model_id, {})
