@@ -2898,7 +2898,6 @@ def show_simulation_page():
                 current_defaults = default_presets.get("default", {})
             param_inputs = {}
             internal_keys = model_data.get("internal_param_keys", [])
-            current_defaults = MODEL_DEFAULTS.get(model_id, {})
             
             param_labels_key = f"param_keys_{st.session_state.lang}"
             all_param_labels = model_data.get(param_labels_key, model_data.get("param_keys_vi", []))
