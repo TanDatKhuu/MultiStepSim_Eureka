@@ -4024,9 +4024,10 @@ def show_dynamic_simulation_page():
             if st.button(f"🚀 {tr('generate_and_show_button')}", width='stretch', type="primary", disabled=is_processing,key="regenerate_gif_btn"):
                 # Chỉ đặt cờ, không rerun
                 st.session_state.generate_gif_request = True
+                st.session_state.gif_is_processing = True
                 if 'generated_gif' in st.session_state:
                     del st.session_state['generated_gif']
-                st.rerun()
+                #st.rerun()
         
         if model_id == 'model5':
             with st.container(border=True):
