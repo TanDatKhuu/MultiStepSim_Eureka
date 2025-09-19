@@ -104,12 +104,25 @@ def render_navbar():
         )
     st.divider()
 MODEL_DEFAULTS = {
-    "model1": {"O0": 1091.0, "k": 0.073, "t0": 0.0, "t1": 10.0},
-    "model2": {"x0": 1.0, "t0": 0.0, "t1": 10.0},
-    "model3": {"n": 50.0, "t0": 0.0, "t1": 10.0},
-    "model4": {"m": 0.5, "l": 1.0, "a": 0.4, "s": 0.25, "G": 100.0, "Y0": 10.0, "dY0": 5.0, "t0": 0.0, "t1": 10.0},
-    "model5": {"x0": 5.0, "y0": 0.0, "u": 2.0, "v": 4.0, "t0": 0.0, "t1": 10.0},
-    "model6": {"y_A0": 1.0, "y_B0": 0.0, "y_C0": 0.0, "k1": 1.0, "k2": 2.0, "t0": 0.0, "t1": 1.0},
+    "model1": {
+        "default": {"O0": 1091.0, "k": 0.073, "t0": 0.0, "t1": 10.0}
+    },
+    "model2": {
+        "default": {"x0": 1.0, "t0": 0.0, "t1": 10.0}
+    },
+    "model3": {
+        "default": {"n": 50.0, "t0": 0.0, "t1": 10.0}
+    },
+    "model4": {
+        "default": {"m": 0.5, "l": 1.0, "a": 0.4, "s": 0.25, "G": 100.0, "Y0": 10.0, "dY0": 5.0, "t0": 0.0, "t1": 10.0}
+    },
+    "model5": {
+        "preset_river_crossing": {"x0": 5.0, "y0": 0.0, "u": 2.0, "v": 4.0, "t0": 0.0, "t1": 10.0},
+        "preset_upstream_struggle": {"x0": 5.0, "y0": 0.0, "u": 4.0, "v": 2.0, "t0": 0.0, "t1": 10.0}
+    },
+    "model6": {
+        "default": {"y_A0": 1.0, "y_B0": 0.0, "y_C0": 0.0, "k1": 1.0, "k2": 2.0, "t0": 0.0, "t1": 1.0}
+    },
 }
 # --- 3. CÁC HÀM TÍNH TOÁN, SOLVERS, MODEL DATA (GIỮ NGUYÊN) ---
 # Dán toàn bộ các hàm từ `RK2` đến `_model5_ode_system` và cả dictionary `MODELS_DATA`
@@ -2871,6 +2884,11 @@ def show_simulation_page():
             selected_h_str = st.radio(tr('screen2_h_label'), options=h_values, index=2, horizontal=True)
             
             st.header(tr('screen2_params_group'))
+			#Lấy tất cả các bộ preset cho model hiện tại
+            default_presets = MODEL_DEFAULTS.get(model_id, {})
+            
+            # Luôn lấy bộ preset ĐẦU TIÊN làm giá trị mặc định để hiển thị
+            current_defaults = next(iter(default_presets.values()), {})
             param_inputs = {}
             internal_keys = model_data.get("internal_param_keys", [])
             current_defaults = MODEL_DEFAULTS.get(model_id, {})
@@ -3947,44 +3965,44 @@ def show_dynamic_simulation_page():
     # === BẮT ĐẦU THÊM CODE MỚI ĐỂ HIỂN THỊ GIF CÓ SẴN ===
     # ==========================================================
     
-    # 1. Xác định tên file GIF mặc định cho model hiện tại
-    pregen_gif_dir = "pre_generated_gifs"
+    is_default_case = False
     default_gif_filename = ""
-    if model_id == 'model2':
-        default_gif_filename = "model2_default.gif"
-    elif model_id == 'model3':
-        default_gif_filename = "model3_default.gif"
-    elif model_id == 'model5':
-        # Đối với Model 5, cần kiểm tra kịch bản (scenario)
-        scenario = st.session_state.get('m5_scenario', 1)
-        default_gif_filename = f"model5_sim{scenario}_default.gif"
     
-    # 2. So sánh tham số hiện tại với tham số mặc định
-    is_default_params = False
     current_params = validated_params.get('params', {})
-    default_params_for_model = MODEL_DEFAULTS.get(model_id, {})
-    if current_params == default_params_for_model:
-        is_default_params = True
-        
-    # 3. Nếu đang dùng tham số mặc định VÀ file GIF tồn tại, thì hiển thị nó và dừng
-    if default_gif_filename and is_default_params:
+    all_presets_for_model = MODEL_DEFAULTS.get(model_id, {})
+    
+    # Lặp qua các bộ preset để tìm sự trùng khớp
+    for preset_key, preset_values in all_presets_for_model.items():
+        if all(current_params.get(key) == value for key, value in preset_values.items()):
+            is_default_case = True
+            
+            # Xây dựng tên file GIF
+            if model_id == 'model5':
+                scenario = st.session_state.get('m5_scenario', 1)
+                default_gif_filename = f"{model_id}_sim{scenario}_{preset_key}.gif"
+            else:
+                default_gif_filename = f"{model_id}_{preset_key}.gif"
+            
+            break # Dừng lại khi tìm thấy
+
+    # Nếu tìm thấy một trường hợp mặc định và file tồn tại...
+    if is_default_case and default_gif_filename:
+        lang_code = st.session_state.lang
+        pregen_gif_dir = os.path.join("pre_generated_gifs", lang_code)
         gif_path = os.path.join(base_path, pregen_gif_dir, default_gif_filename)
         
         if os.path.exists(gif_path):
             st.header(tr('simulation_results_title'))
             st.subheader(tr(f"{model_id}_name"))
             
-            st.info(tr("info_showing_default_gif", "Hiển thị mô phỏng mặc định. Để tạo mô phỏng với tham số khác, vui lòng quay lại và thay đổi giá trị đầu vào."))
+            st.info(tr("info_showing_default_gif"))
             
             with open(gif_path, "rb") as file:
                 st.image(file.read())
             
-            # Thêm nút quay lại
             if st.button(f"ᐊ {tr('screen3_back_button')}"):
-                 st.session_state.page = 'simulation'
-                 st.rerun()
-
-            st.stop() # Dừng thực thi phần còn lại của trang
+                 _cleanup_and_navigate('simulation')
+            st.stop() # Dừng, không hiển thị phần điều khiển tạo GIF
     model_data = MODELS_DATA.get(st.session_state.get("selected_model_key"))
     is_processing = st.session_state.get('gif_is_processing', False)
     # --- Bố cục giao diện chính ---
