@@ -4079,7 +4079,6 @@ def show_dynamic_simulation_page():
 
             if st.session_state.get('is_default_case') and st.session_state.get('default_gif_path'):
                 # Trường hợp 1: Dùng GIF có sẵn
-                st.info(tr("info_loading_default_gif", "Tải mô phỏng mặc định..."))
                 with open(st.session_state.default_gif_path, "rb") as f:
                     gif_bytes = f.read()
                 # (Chúng ta chưa có stats cho file có sẵn, có thể cải tiến sau)
