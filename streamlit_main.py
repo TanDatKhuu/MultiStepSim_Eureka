@@ -4081,6 +4081,7 @@ def show_dynamic_simulation_page():
                 # Trường hợp 1: Dùng GIF có sẵn
                 with open(st.session_state.default_gif_path, "rb") as f:
                     gif_bytes = f.read()
+                final_stats = {} 
             else:
                 # Trường hợp 2: Tạo GIF mới
                 speed_multiplier = st.session_state.get('speed_multiplier', 1.0)
