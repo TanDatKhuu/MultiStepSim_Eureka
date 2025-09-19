@@ -3727,7 +3727,7 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                     seconds_per_step = abm_params.get("seconds_per_step", 0.1) 
                     real_time_seconds = stats['time_step'] * seconds_per_step
                     title_text = _tr("screen3_model3_anim_plot_title"); time_label = _tr("screen3_actual_time"); infected_label = _tr("screen3_infected_label_short")
-                    full_title = f"{title_text}\n{time_label}: {real_time_seconds:.2f} {time_unit} | {infected_label}: {stats['infected_count']}"
+                    full_title = f"{title_text}\n{time_label} {real_time_seconds:.2f} {time_unit} | {infected_label}: {stats['infected_count']}"
                     ax.set_title(full_title, fontsize=9)
                     if ended_by_logic: break
 
