@@ -3629,7 +3629,7 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                             if current_max_step > highest_step_found:
                                 highest_step_found = current_max_step; best_method_key = method_key
                     if best_method_key is not None and highest_step_found != -1:
-                        best_sim_data = results[best_method_key][str(highest_step_found)]
+                        best_sim_data = results[best_method_key][highest_step_found]
                 sim_data = best_sim_data if best_sim_data is not None else {}
             
             if not sim_data: 
