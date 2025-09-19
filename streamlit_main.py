@@ -3678,7 +3678,7 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                 progress_text.text(f"{_tr('gif_generating_spinner')} ({frame_idx + 1}/{num_frames})")
                 ax.clear()
                 time_unit = _tr("time_unit_seconds")
-                cell = _tr("screen3_legend_model2_cell")
+                Cells = _tr("screen3_legend_model2_cell")
                 if model_id == 'model2':
                     t_data, y_data = sim_data['t_plot'], sim_data['approx_sol_plot']
                     target_n = int(round(y_data[frame_idx]))
@@ -3700,7 +3700,7 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                         ax.set_xlim(-max_coord, max_coord); ax.set_ylim(-max_coord, max_coord)
                     ax.set_aspect('equal'); ax.axis('off')
                     ax.legend([MplCircle((0,0), 0.1, color='#A52A2A', ec='black', lw=0.5)], [_tr("screen3_legend_model2_cell")], loc='upper right')
-                    ax.set_title(_tr("screen3_model2_anim_plot_title") + f"\nTime: {t_data[frame_idx]:.2f} {time_unit} | {cell}: {len(model2_cells)}")
+                    ax.set_title(_tr("screen3_model2_anim_plot_title") + f"\nTime: {t_data[frame_idx]:.2f} {time_unit} | {Cells}: {len(model2_cells)}")
 
                 elif model_id == 'model3':
                     ended_by_logic = abm_instance.step()
