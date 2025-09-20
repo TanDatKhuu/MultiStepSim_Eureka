@@ -3925,22 +3925,23 @@ def show_dynamic_simulation_page():
             # Xây dựng tên file cơ sở dựa trên quy tắc của generate_gifs.py
             if model_id == 'model5':
                 scenario = st.session_state.get('m5_scenario', 1)
-                # Tên file sẽ là preset1, preset2... dựa trên thứ tự trong MODEL_DEFAULTS
-                preset_number = i + 1
-                filename_base = f"{model_id}_sim{scenario}_preset{preset_number}"
+	            # SỬA LỖI: Sử dụng `preset_key` thay vì `i + 1` để tạo tên file chính xác
+                filename_base = f"{model_id}_sim{scenario}_{preset_key}"
+	        # Highlight: KẾT THÚC THAY ĐỔI Ở ĐÂY
             else:
                 filename_base = f"{model_id}_default"
-            
-            # Xây dựng đường dẫn đầy đủ
+	        
+	        # Xây dựng đường dẫn đầy đủ
             lang_code = st.session_state.lang
             gif_path = os.path.join(base_path, "pre_generated_gifs", lang_code, f"{filename_base}.gif")
             stats_path = os.path.join(base_path, "pre_generated_stats", lang_code, f"{filename_base}.json")
-            
+	        
             if os.path.exists(gif_path):
                 default_gif_path = gif_path
             if os.path.exists(stats_path):
                 default_stats_path = stats_path
             break
+
     
     st.session_state.is_default_case = is_default_case
     st.session_state.default_gif_path = default_gif_path
