@@ -16,30 +16,29 @@ import imageio
 import io
 
 # --- Lớp giả lập st.session_state để các hàm có thể chạy ---
-class FakeSessionState:
-    def __init__(self):
-        self._state = {}
+class FakeSessionState(dict):
+    """
+    Một lớp giả lập st.session_state hoạt động như một dictionary,
+    cho phép truy cập thuộc tính bằng dấu chấm (ví dụ: state.value).
+    """
+    def __init__(self, **kwargs):
+        super().__init__(kwargs)
 
-    def __getattr__(self, name):
-        return self._state.get(name)
+    def __setattr__(self, key, value):
+        self[key] = value
 
-    def __setattr__(self, name, value):
-        if name == "_state":
-            super().__setattr__(name, value)
-        else:
-            self._state[name] = value
+    def __getattr__(self, key):
+        try:
+            return self[key]
+        except KeyError:
+            # Trả về lỗi AttributeError để giống với hành vi của các đối tượng Python thông thường
+            raise AttributeError(key)
 
-    def get(self, key, default=None):
-        return self._state.get(key, default)
-
-    def __contains__(self, key):
-        return key in self._state
-        
-    def __getitem__(self, key):
-        return self._state[key]
-        
-    def __setitem__(self, key, value):
-        self._state[key] = value
+    def __delattr__(self, key):
+        try:
+            del self[key]
+        except KeyError:
+            raise AttributeError(key)
 
 st.session_state = FakeSessionState()
 
@@ -63,14 +62,15 @@ FIG_FOLDER = os.path.join(base_path, "fig")
 # Giả định file ảnh và các tài nguyên khác nằm cùng thư mục với script
 base_path = os.path.dirname(os.path.abspath(__file__))
 def load_language_file(lang_code):
-    """Tải dictionary ngôn ngữ từ file JSON tương ứng."""
+    # Dòng print để gỡ lỗi
+    print(f"--- Attempting to load language file for: '{lang_code}' ---")
     path = os.path.join(base_path, "languages", f"{lang_code}.json")
     try:
         with open(path, 'r', encoding='utf-8') as f:
+            print(f"--- Success! Loaded '{lang_code}.json'.") # Thêm dòng này
             return json.load(f)
     except Exception as e:
-        # Nếu có lỗi, mặc định trả về tiếng Việt để tránh sập app
-        print(f"Error loading language file {path}: {e}")
+        print(f"--- ERROR loading '{lang_code}.json': {e}. Falling back to 'vi.json'.") # Sửa dòng này
         path_vi = os.path.join(base_path, "languages", "vi.json")
         with open(path_vi, 'r', encoding='utf-8') as f:
             return json.load(f)
@@ -85,12 +85,26 @@ class NumpyEncoder(json.JSONEncoder):
             return obj.tolist()
         return json.JSONEncoder.default(self, obj)
 MODEL_DEFAULTS = {
-    "model1": {"O0": 1091.0, "k": 0.073, "t0": 0.0, "t1": 10.0},
-    "model2": {"x0": 1.0, "t0": 0.0, "t1": 10.0},
-    "model3": {"n": 50.0, "t0": 0.0, "t1": 10.0},
-    "model4": {"m": 0.5, "l": 1.0, "a": 0.4, "s": 0.25, "G": 100.0, "Y0": 10.0, "dY0": 5.0, "t0": 0.0, "t1": 10.0},
-    "model5": {"x0": 5.0, "y0": 0.0, "u": 2.0, "v": 4.0, "t0": 0.0, "t1": 10.0},
-    "model6": {"y_A0": 1.0, "y_B0": 0.0, "y_C0": 0.0, "k1": 1.0, "k2": 2.0, "t0": 0.0, "t1": 1.0},
+    "model1": {
+        "default": {"O0": 1091.0, "k": 0.073, "t0": 0.0, "t1": 10.0}
+    },
+    "model2": {
+        "default": {"x0": 1.0, "t0": 0.0, "t1": 10.0}
+    },
+    "model3": {
+        "default": {"n": 50.0, "t0": 0.0, "t1": 10.0}
+    },
+    "model4": {
+        "default": {"m": 0.5, "l": 1.0, "a": 0.4, "s": 0.25, "G": 100.0, "Y0": 10.0, "dY0": 5.0, "t0": 0.0, "t1": 10.0}
+    },
+    "model5": {
+        # Sử dụng các key có ý nghĩa để đặt tên cho từng bộ tham số
+        "preset_river_crossing": {"x0": 5.0, "y0": 0.0, "u": 2.0, "v": 4.0, "t0": 0.0, "t1": 10.0},
+        "preset_upstream_struggle": {"x0": 5.0, "y0": 0.0, "u": 4.0, "v": 2.0, "t0": 0.0, "t1": 10.0}
+    },
+    "model6": {
+        "default": {"y_A0": 1.0, "y_B0": 0.0, "y_C0": 0.0, "k1": 1.0, "k2": 2.0, "t0": 0.0, "t1": 1.0}
+    },
 }
 # --- 3. CÁC HÀM TÍNH TOÁN, SOLVERS, MODEL DATA (GIỮ NGUYÊN) ---
 # Dán toàn bộ các hàm từ `RK2` đến `_model5_ode_system` và cả dictionary `MODELS_DATA`
@@ -2512,7 +2526,6 @@ class Cell:
         self.gen = gen
         self.last_division = -100
 
-@st.cache_data
 def run_and_prepare_m5s1_animation_data(_validated_params_json):
     """
     Chạy lại mô phỏng cho Model 5 Sim 1 để lấy dữ liệu quỹ đạo đầy đủ
@@ -2862,7 +2875,7 @@ def run_and_store_model5_scenario2_results():
         _traj_params_dict_json=traj_params_json
     )
 	
-def create_animation_gif(lang_code, model_id, model_data, validated_params, speed_multiplier):
+def create_animation_gif(lang_code, model_id, model_data, validated_params, speed_multiplier, sim_data_input=None):
     # --- CÀI ĐẶT FONT VÀ HÀM DỊCH NGÔN NGỮ CỤC BỘ ---
     font_path = os.path.join(base_path, "fonts", "DejaVuSans.ttf")
     if os.path.exists(font_path):
@@ -2874,86 +2887,77 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
     translations = load_language_file(lang_code)
     def _tr(key, default=""):
         return translations.get(key, default if default else key)
+
     print("  Bắt đầu tạo GIF...")
 
     gif_buf = io.BytesIO()
     with imageio.get_writer(gif_buf, mode='I', format='gif', duration=0.1 / speed_multiplier, loop=None) as writer:
         try:
-            # Đồng bộ figsize và dpi với placeholder để có tỷ lệ khung hình đúng
             fig, ax = plt.subplots(figsize=(8, 6), dpi=100)
-            
             final_stats = {}
-
-            # --- Lấy dữ liệu mô phỏng cần thiết ---
+            
             sim_data = {}
-            if model_id == 'model5' and st.session_state.m5_scenario == 1:
-                validated_params_json = json.dumps(validated_params, cls=NumpyEncoder)
-                sim_data = run_and_prepare_m5s1_animation_data(validated_params_json)
-            elif model_id == 'model5' and st.session_state.m5_scenario == 2:
-                if 'm5s2_results' not in st.session_state or not st.session_state.m5s2_results:
-                    run_and_store_model5_scenario2_results()
-                sim_data = st.session_state.get('m5s2_results', {})
-            else: 
-                results = st.session_state.get('simulation_results', {})
-                best_sim_data = None
-                if results:
-                    highest_step_found = -1; best_method_key = None
-                    for method_key, step_results in results.items():
-                        if step_results:
-                            current_max_step = max(int(k) for k in step_results.keys())
-                            if current_max_step > highest_step_found:
-                                highest_step_found = current_max_step; best_method_key = method_key
-                    if best_method_key is not None and highest_step_found != -1:
-                        best_sim_data = results[best_method_key][highest_step_found]
-                sim_data = best_sim_data if best_sim_data is not None else {}
-            
-            if not sim_data: return None, {}
+            # Bóc tách dữ liệu cho Model 2 và 3
+            if model_id in ['model2', 'model3']:
+                # Dữ liệu được truyền vào có cấu trúc {'Bashforth': {4: {...}}}
+                # Chúng ta cần lấy dictionary bên trong cùng
+                try:
+                    sim_data = sim_data_input['Bashforth'][4]
+                except (KeyError, TypeError):
+                    print(f"  LỖI: Cấu trúc dữ liệu cho {model_id} không đúng.")
+                    sim_data = None
+            else:
+                # Các model khác (Model 5) đã truyền dữ liệu đúng định dạng
+                sim_data = sim_data_input
 
-            # === BẮT ĐẦU THAY ĐỔI: LẤY MẪU DỮ LIỆU ===
-            MAX_GIF_FRAMES = 300 # Đặt số frame tối đa cho GIF, 300 là con số hợp lý (khoảng 30s ở 10fps)
-            
-            # Lấy dữ liệu gốc
-            original_t = None
-            if sim_data.get('t_plot') is not None:
-                original_t = sim_data.get('t_plot')
-            elif sim_data.get('time_points') is not None:
-                original_t = sim_data.get('time_points')
-            original_all_components = None
-            if sim_data.get('approx_sol_plot_all_components') is not None:
-                 original_all_components = sim_data.get('approx_sol_plot_all_components')
-            elif sim_data.get('state_history') is not None:
-                 original_all_components = sim_data.get('state_history')
-
-            if original_t is None or original_all_components is None:
+            if not sim_data:
+                print("  LỖI: Dữ liệu đầu vào cho create_animation_gif là rỗng hoặc không đúng định dạng.")
                 return None, {}
 
-            num_original_points = len(original_t)
+            # ==========================================================
+            # === BẮT ĐẦU SỬA LỖI: LOGIC LẤY MẪU DỮ LIỆU MỚI ===
+            # ==========================================================
+            MAX_GIF_FRAMES = 300 
+            
+            # Lấy mốc thời gian làm chuẩn
+            original_t = sim_data.get('t_plot')
+            if original_t is None:
+                original_t = sim_data.get('time_points')
+            
+            if original_t is None and model_id != 'model3':
+                print("  LỖI: Không tìm thấy dữ liệu thời gian ('t_plot' hoặc 'time_points').")
+                return None, {}
 
-            # Thực hiện lấy mẫu nếu số điểm gốc lớn hơn MAX_GIF_FRAMES
-            if num_original_points > MAX_GIF_FRAMES:
-                indices = np.linspace(0, num_original_points - 1, MAX_GIF_FRAMES, dtype=int)
-                
-                sampled_sim_data = sim_data.copy()
-                
-                # Cập nhật các key có thể có
-                if 't_plot' in sampled_sim_data: sampled_sim_data['t_plot'] = original_t[indices]
-                if 'time_points' in sampled_sim_data: sampled_sim_data['time_points'] = original_t[indices]
-                
-                # Xử lý cho list of arrays và array 2D
-                if isinstance(original_all_components, list): # Dành cho model5_sim1
-                    sampled_sim_data['approx_sol_plot_all_components'] = [comp[indices] for comp in original_all_components]
-                else: # Dành cho model5_sim2 (state_history)
-                    sampled_sim_data['state_history'] = original_all_components[indices]
-                sim_data = sampled_sim_data
+            if model_id != 'model3':
+                num_original_points = len(original_t)
 
-            # --- Xác định số lượng frame tối đa (sử dụng dữ liệu đã lấy mẫu) ---
+                if num_original_points > MAX_GIF_FRAMES:
+                    print(f"  Dữ liệu gốc có {num_original_points} điểm, lấy mẫu xuống còn {MAX_GIF_FRAMES} điểm.")
+                    indices = np.linspace(0, num_original_points - 1, MAX_GIF_FRAMES, dtype=int)
+                    
+                    # Cập nhật t
+                    if 't_plot' in sim_data: sim_data['t_plot'] = sim_data['t_plot'][indices]
+                    if 'time_points' in sim_data: sim_data['time_points'] = sim_data['time_points'][indices]
+                    
+                    # Cập nhật dữ liệu Y tương ứng dựa trên key tồn tại
+                    if 'approx_sol_plot' in sim_data and sim_data['approx_sol_plot'] is not None:
+                        sim_data['approx_sol_plot'] = sim_data['approx_sol_plot'][indices]
+                    if 'approx_sol_plot_all_components' in sim_data and sim_data['approx_sol_plot_all_components'] is not None:
+                        sim_data['approx_sol_plot_all_components'] = [comp[indices] for comp in sim_data['approx_sol_plot_all_components']]
+                    if 'state_history' in sim_data and sim_data['state_history'] is not None:
+                        sim_data['state_history'] = sim_data['state_history'][indices]
+            # ==========================================================
+            # === KẾT THÚC SỬA LỖI =====================================
+            # ==========================================================
+
             num_frames = 0
             if model_id == 'model2': num_frames = len(sim_data.get('t_plot', []))
             elif model_id == 'model3': num_frames = model_data.get("abm_defaults", {}).get("max_steps", 400)
             elif model_id == 'model5' and st.session_state.m5_scenario == 1: num_frames = len(sim_data.get('t_plot', []))
             elif model_id == 'model5' and st.session_state.m5_scenario == 2: num_frames = len(sim_data.get('time_points', []))
-            if num_frames == 0 and model_id != 'model3': return None, {}
-            # === KẾT THÚC THAY ĐỔI ===
+            if num_frames == 0 and model_id != 'model3': 
+                print("  LỖI: Số lượng frame bằng 0 sau khi xử lý dữ liệu.")
+                return None, {}
             
             # --- Khởi tạo đối tượng mô phỏng ---
             abm_instance = None
@@ -2972,11 +2976,17 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                 loop_iterator = range(max_steps_abm)
             
             for frame_idx in loop_iterator:
-                progress_percent = (frame_idx + 1) / num_frames if num_frames > 0 else 0
-                progress_bar.progress(progress_percent)
-                if frame_idx % 10 == 0: print(f"    Đang xử lý frame: {frame_idx + 1}/{num_frames}")
+                # Bỏ qua `progress_bar.progress` vì nó không tồn tại
+                if frame_idx % 20 == 0:
+                    print(f"    Đang xử lý frame: {frame_idx + 1}/{num_frames}")
+                
                 ax.clear()
                 time_unit = _tr("time_unit_seconds")
+                Cells = _tr("screen3_legend_model2_cell")
+                # ... (Phần còn lại của hàm `create_animation_gif` giữ nguyên y hệt như cũ)
+                # ... từ `if model_id == 'model2':` cho đến hết hàm
+                # ...
+                # (Dán phần còn lại của hàm create_animation_gif của bạn vào đây)
                 if model_id == 'model2':
                     t_data, y_data = sim_data['t_plot'], sim_data['approx_sol_plot']
                     target_n = int(round(y_data[frame_idx]))
@@ -2998,7 +3008,7 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                         ax.set_xlim(-max_coord, max_coord); ax.set_ylim(-max_coord, max_coord)
                     ax.set_aspect('equal'); ax.axis('off')
                     ax.legend([MplCircle((0,0), 0.1, color='#A52A2A', ec='black', lw=0.5)], [_tr("screen3_legend_model2_cell")], loc='upper right')
-                    ax.set_title(_tr("screen3_model2_anim_plot_title") + f"\nTime: {t_data[frame_idx]:.2f} {time_unit} | Cells: {len(model2_cells)}")
+                    ax.set_title(_tr("screen3_model2_anim_plot_title") + f"\nTime: {t_data[frame_idx]:.2f} {time_unit} | {Cells}: {len(model2_cells)}")
 
                 elif model_id == 'model3':
                     ended_by_logic = abm_instance.step()
@@ -3014,7 +3024,7 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                     seconds_per_step = abm_params.get("seconds_per_step", 0.1) 
                     real_time_seconds = stats['time_step'] * seconds_per_step
                     title_text = _tr("screen3_model3_anim_plot_title"); time_label = _tr("screen3_actual_time"); infected_label = _tr("screen3_infected_label_short")
-                    full_title = f"{title_text}\n{time_label}: {real_time_seconds:.2f} {time_unit} | {infected_label}: {stats['infected_count']}"
+                    full_title = f"{title_text}\n{time_label} {real_time_seconds:.2f} {time_unit} | {infected_label}: {stats['infected_count']}"
                     ax.set_title(full_title, fontsize=9)
                     if ended_by_logic: break
 
@@ -3027,24 +3037,13 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                     plot_limits = sim_data.get('plot_limits', {})
                     xlim = plot_limits.get('xlim')
                     ylim = plot_limits.get('ylim')
-	
-	                # Chỉ set giới hạn nếu nó tồn tại trong sim_data
+
                     if xlim and ylim:
                         ax.set_xlim(xlim)
                         ax.set_ylim(ylim)
                     else:
-	                    # Fallback (phòng trường hợp plot_limits không được truyền qua)
-	                    # Bạn có thể giữ lại logic tính toán động cũ ở đây như một phương án dự phòng,
-	                    # nhưng với Bước 1 đã đúng, nó sẽ không được gọi đến.
                         print("Cảnh báo: Không tìm thấy 'plot_limits' trong sim_data. Tự động tính toán giới hạn.")
-	                    # (logic tính toán động cũ có thể đặt ở đây)
-	                
-	                # ====================================================================
-	                # === KẾT THÚC SỬA LỖI ===
-	                # ====================================================================
-	
-	                # Vẽ nền (fill_betweenx) cần sử dụng giới hạn đã được set
-	                # Lấy lại ylim đã được áp dụng cho trục để đảm bảo chính xác
+                    
                     current_ylim = ax.get_ylim()
                     current_xlim = ax.get_xlim()
                     ax.fill_betweenx(current_ylim, current_xlim[0], 0, color='#A0522D', alpha=0.8)
@@ -3068,9 +3067,8 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                     ax.xaxis.set_major_locator(MaxNLocator(nbins=5, prune='both'))
                     ax.yaxis.set_major_locator(MaxNLocator(nbins='auto', prune='both'))
                     ax.tick_params(axis='both', which='major', labelsize=8)
-
-                    # THAY ĐỔI: Tái sử dụng key dịch 'screen3_result_time'
-                    time_label = _tr("screen3_result_time").replace(":", "") # Bỏ dấu hai chấm
+                    
+                    time_label = _tr("screen3_result_time").replace(":", "")
                     ax.set_title(f"{_tr('screen3_model5_plot_title_sim1')}\n{time_label}: {t_data[frame_idx]:.2f} {time_unit}")
                     
                     proxy_ship_legend = Line2D([0], [0], linestyle='None', marker='*', markersize=10, color='gold', markeredgecolor='red', markeredgewidth=0.5)
@@ -3093,10 +3091,10 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                     ax.plot(evader_path[:, 0], evader_path[:, 1], 'b--', label=_tr('screen3_legend_m5s2_path_submarine'))
                     ax.plot(pursuer_path[frame_idx, 0], pursuer_path[frame_idx, 1], 
                             marker='*', color='red', markeredgecolor='black', markersize=10, 
-                            label=_tr('screen3_legend_m5s2_destroyer')) # Tàu khu trục (pursuer) màu đỏ
+                            label=_tr('screen3_legend_m5s2_destroyer'))
                     ax.plot(evader_path[frame_idx, 0], evader_path[frame_idx, 1], 
                             marker='*', color='gold', markeredgecolor='black', markersize=10, 
-                            label=_tr('screen3_legend_m5s2_submarine')) # Tàu ngầm (target) màu vàng
+                            label=_tr('screen3_legend_m5s2_submarine'))
                     if is_caught and t_points[frame_idx] >= catch_time:
                         catch_frame_idx_arr = np.where(t_points >= catch_time)[0]
                         if len(catch_frame_idx_arr) > 0:
@@ -3109,14 +3107,12 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                     ax.xaxis.set_major_locator(MaxNLocator(nbins=5, prune='both'))
                     ax.yaxis.set_major_locator(MaxNLocator(nbins='auto', prune='both'))
                     ax.tick_params(axis='both', which='major', labelsize=8)
-                    time_label = _tr("screen3_result_time").replace(":", "") # Lấy "Thời gian mô phỏng (t)" và bỏ dấu :
+                    time_label = _tr("screen3_result_time").replace(":", "")
                     ax.set_title(f"{_tr('screen3_model5_plot_title_sim2')}\n{time_label}: {t_points[frame_idx]:.2f} {time_unit}")
                     if is_caught and t_points[frame_idx] >= catch_time: break
                 
-                # --- Ghi frame vào GIF ---
                 fig.canvas.draw()
                 frame_buf = io.BytesIO()
-                #fig.tight_layout(pad=1.5)
                 fig.savefig(frame_buf, format='png')
                 frame_buf.seek(0)
                 writer.append_data(imageio.imread(frame_buf))
@@ -3187,97 +3183,101 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
     return gif_buf.getvalue(), final_stats
 # --- 2. LOGIC CHÍNH ĐỂ TẠO CÁC FILE GIF ---
 if __name__ == "__main__":
-    # --- Thiết lập môi trường giả lập ---
-    st.session_state.lang = 'vi'
-    st.session_state.translations = load_language_file('vi')
     
-    # --- Tạo thư mục lưu trữ ---
-    output_dir = "pre_generated_gifs"
-    os.makedirs(output_dir, exist_ok=True)
-    print(f"Thư mục lưu trữ: '{output_dir}'")
+    languages_to_generate = ['vi', 'en']
 
-    # --- Các kịch bản cần tạo GIF ---
-    scenarios = {
-        "model2": {"model_id": "model2", "model_key": LANG_VI["model2_name"]},
-        "model3": {"model_id": "model3", "model_key": LANG_VI["model3_name"]},
-        "model5_sim1": {"model_id": "model5", "model_key": LANG_VI["model5_name"], "m5_scenario": 1},
-        "model5_sim2": {"model_id": "model5", "model_key": LANG_VI["model5_name"], "m5_scenario": 2},
-    }
+    for lang_code in languages_to_generate:
+        print(f"\n#####################################################")
+        print(f"###   GENERATING ASSETS FOR LANGUAGE: '{lang_code.upper()}'   ###")
+        print(f"#####################################################")
 
-    for name, config in scenarios.items():
-        print(f"\n=============================================")
-        print(f"BẮT ĐẦU TẠO GIF CHO: {name.upper()}")
-        print(f"=============================================")
+        # =========================================================================
+        # HIGHLIGHT: TẠO CẢ THƯ MỤC CHO GIF VÀ STATS
+        # =========================================================================
+        gif_output_dir = os.path.join("pre_generated_gifs", lang_code)
+        stats_output_dir = os.path.join("pre_generated_stats", lang_code)
+        os.makedirs(gif_output_dir, exist_ok=True)
+        os.makedirs(stats_output_dir, exist_ok=True)
+        print(f"Thư mục GIF: '{gif_output_dir}'")
+        print(f"Thư mục Stats: '{stats_output_dir}'")
+        # =========================================================================
 
-        try:
-            model_id = config["model_id"]
-            model_key = config["model_key"]
-            model_data = MODELS_DATA[model_key]
+        scenarios = {
+            "model2_default": {"model_id": "model2", "model_key": LANG_VI["model2_name"], "preset_key": "default"},
+            "model3_default": {"model_id": "model3", "model_key": LANG_VI["model3_name"], "preset_key": "default"},
+            "model5_sim1_preset_river_crossing": {"model_id": "model5", "model_key": LANG_VI["model5_name"], "m5_scenario": 1, "preset_key": "preset_river_crossing"},
+            "model5_sim1_preset_upstream_struggle": {"model_id": "model5", "model_key": LANG_VI["model5_name"], "m5_scenario": 1, "preset_key": "preset_upstream_struggle"},
+            "model5_sim2_preset_river_crossing": {"model_id": "model5", "model_key": LANG_VI["model5_name"], "m5_scenario": 2, "preset_key": "preset_river_crossing"},
+            "model5_sim2_preset_upstream_struggle": {"model_id": "model5", "model_key": LANG_VI["model5_name"], "m5_scenario": 2, "preset_key": "preset_upstream_struggle"},
+        }
+
+        for name, config in scenarios.items():
+            print(f"\n=============================================")
+            print(f"BẮT ĐẦU XỬ LÝ: {name.upper()} ({lang_code.upper()})")
+            print(f"=============================================")
             
-            # Bước 1: Lấy tham số mặc định
-            default_params = MODEL_DEFAULTS[model_id]
-            
-            # Bước 2: Chạy logic chuẩn bị của Screen 2 để tính các tham số ẩn (c, r)
-            prep_ok, prep_data, calculated_params = _prepare_simulation_functions(
-                model_data, default_params, "Bashforth" # Dùng AB làm pp mặc định
-            )
-            if not prep_ok:
-                print(f"  LỖI: Không thể chuẩn bị mô phỏng cho {name}. Bỏ qua.")
-                continue
-            
-            # Cập nhật state giả lập với các tham số đã tính
-            for key, value in calculated_params.items():
-                st.session_state[f'last_calculated_{key}'] = value
-            if model_id in ['model2', 'model3']:
-	            print(f"  Chạy mô phỏng tĩnh cho {model_id} để lấy dữ liệu...")
-	            static_result = _perform_single_simulation(
-	                model_data, ode_func, exact_callable, y0, t_start, t_end,
-	                "Bashforth", 4, 0.01, 'x'
-	            )
-	            if static_result:
-	                st.session_state.simulation_results = {
-	                    "Bashforth": {
-	                        4: static_result
-	                    }
-	                }
-	                print("  Lấy dữ liệu mô phỏng tĩnh thành công.")
-	            else:
-	                print(f"  LỖI: Không thể tạo dữ liệu tĩnh cho {model_id}. Bỏ qua.")
-	                continue
-            # Bước 3: Tạo `validated_params` như thể nó được truyền từ Screen 2 sang Screen 3
-            validated_params = {
-                'params': default_params,
-                'h_target': 0.01, # Giá trị h mặc định
-                'model_id': model_id,
-                'tasks_run': {'Bashforth': [4]} # Giả lập đã chạy AB4
-            }
-            
-            st.session_state.validated_params_for_dynamic = validated_params
-            st.session_state.selected_model_key = model_key
-            if 'm5_scenario' in config:
-                st.session_state.m5_scenario = config['m5_scenario']
+            # ... (phần code chuẩn bị mô phỏng không đổi) ...
+            st.session_state = FakeSessionState()
+            st.session_state.lang = lang_code 
+            st.session_state.translations = load_language_file(lang_code)
+            try:
+                # ... (phần code chuẩn bị validated_params, input_data_for_gif... không đổi) ...
+                model_id = config["model_id"]
+                model_key = config["model_key"]
+                preset_key = config["preset_key"]
+                model_data = MODELS_DATA[model_key]
+                default_params = MODEL_DEFAULTS[model_id][preset_key] 
+                validated_params = { 'params': default_params, 'h_target': 0.01, 'model_id': model_id, 'tasks_run': {'Bashforth': [4]} }
+                input_data_for_gif = None
+                if model_id in ['model2', 'model3']:
+                    prep_ok, prep_data, calculated_params = _prepare_simulation_functions(model_data, default_params, "Bashforth")
+                    if not prep_ok: continue
+                    for key, value in calculated_params.items(): st.session_state[f'last_calculated_{key}'] = value
+                    ode_func, exact_callable, y0, t_start, t_end = prep_data
+                    static_result = _perform_single_simulation(model_data, ode_func, exact_callable, y0, t_start, t_end, "Bashforth", 4, 0.01, 'x')
+                    if static_result: input_data_for_gif = {"Bashforth": {4: static_result}}
+                    else: continue
+                elif model_id == 'model5':
+                    scenario = config['m5_scenario']
+                    st.session_state.m5_scenario = scenario
+                    validated_params_json = json.dumps(validated_params, cls=NumpyEncoder)
+                    if scenario == 1:
+                        input_data_for_gif = run_and_prepare_m5s1_animation_data(validated_params_json)
+                    elif scenario == 2:
+                        st.session_state.validated_params = validated_params 
+                        run_and_store_model5_scenario2_results()
+                        input_data_for_gif = st.session_state.get('m5s2_results', {})
+                if not input_data_for_gif: continue
 
-            # Bước 4: Gọi hàm tạo GIF
-            # Speed multiplier = 1.0 (tốc độ bình thường)
-            gif_bytes, final_stats = create_animation_gif(
-                'vi', model_id, model_data, validated_params, 1.0
-            )
+                gif_bytes, final_stats = create_animation_gif(
+                    lang_code, model_id, model_data, validated_params, 1.0, sim_data_input=input_data_for_gif
+                )
 
-            if gif_bytes:
-                # Bước 5: Lưu file
-                filename = f"{name}_default.gif"
-                filepath = os.path.join(output_dir, filename)
-                with open(filepath, "wb") as f:
-                    f.write(gif_bytes)
-                print(f"  THÀNH CÔNG: Đã lưu file '{filepath}' ({len(gif_bytes) / 1024:.1f} KB)")
-            else:
-                print(f"  LỖI: Hàm create_animation_gif không trả về dữ liệu cho {name}.")
+                if gif_bytes and final_stats:
+                    # Lưu file GIF
+                    gif_filename = f"{name}.gif"
+                    gif_filepath = os.path.join(gif_output_dir, gif_filename)
+                    with open(gif_filepath, "wb") as f:
+                        f.write(gif_bytes)
+                    print(f"  -> Đã lưu GIF: '{gif_filepath}'")
 
-        except Exception as e:
-            print(f"  LỖI NGHIÊM TRỌNG khi xử lý {name}: {e}")
-            import traceback
-            traceback.print_exc()
+                    # =========================================================================
+                    # HIGHLIGHT: LƯU FILE JSON CHỨA THÔNG TIN MÔ PHỎNG
+                    # =========================================================================
+                    stats_filename = f"{name}.json"
+                    stats_filepath = os.path.join(stats_output_dir, stats_filename)
+                    with open(stats_filepath, "w", encoding="utf-8") as f:
+                        json.dump(final_stats, f, ensure_ascii=False, indent=4, cls=NumpyEncoder)
+                    print(f"  -> Đã lưu Stats: '{stats_filepath}'")
+                    # =========================================================================
+                else:
+                    print(f"  LỖI: Không tạo được GIF hoặc Stats cho {name}.")
+
+            except Exception as e:
+                print(f"  LỖI NGHIÊM TRỌNG khi xử lý {name}: {e}")
+                import traceback
+                traceback.print_exc()
 
     print("\n=============================================")
-    print("HOÀN TẤT.")
+    print("HOÀN TẤT TOÀN BỘ CÁC NGÔN NGỮ.")
     print("=============================================")
