@@ -3627,7 +3627,11 @@ def create_animation_gif(lang_code, model_id, model_data, validated_params, spee
                     sim_data = st.session_state.get('m5s2_results', {})
                 
                 if sim_data:
-                    t_points = sim_data.get('t_plot') or sim_data.get('time_points', [])
+                    t_points = []
+                    if 't_plot' in sim_data and sim_data['t_plot'] is not None:
+                        t_points = sim_data['t_plot']
+                    elif 'time_points' in sim_data and sim_data['time_points'] is not None:
+                        t_points = sim_data['time_points']
                     num_frames = len(t_points)
             
             else: # Áp dụng cho các model còn lại (Model 2)
