@@ -1,0 +1,11 @@
+{
+    "Growth constant (c):": {
+        "value": "0.2977"
+    },
+    "Cell count (or mass):": {
+        "value": 8
+    },
+    "Simulation time (t):": {
+        "value": "10.00 (Time unit)"
+    }
+}
