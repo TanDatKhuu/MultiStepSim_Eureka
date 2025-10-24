@@ -2846,7 +2846,6 @@ def show_simulation_page():
 	        st.multiselect(
 	            tr('screen2_steps_label'),
 	            options=all_step_keys_ab,
-	            default=[tr('screen2_step4')] if tr('screen2_step4') in all_step_keys_ab else [all_step_keys_ab[0]],
 	            key='ms_steps_ab'
 	        )
 	        st.divider()
@@ -2872,7 +2871,6 @@ def show_simulation_page():
 	        st.multiselect(
 	            tr('screen2_steps_label'),
 	            options=all_step_keys_am,
-	            default=[tr('screen2_step4')],
 	            key='ms_steps_am'
 	        )
 	        st.divider()
@@ -2898,7 +2896,6 @@ def show_simulation_page():
 	        st.multiselect(
 	            tr('screen2_order_label'),
 	            options=all_order_keys_rk,
-	            default=[tr('screen2_order4')],
 	            key='ms_orders'
 	        )
 	        st.divider()
