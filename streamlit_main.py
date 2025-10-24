@@ -2827,58 +2827,83 @@ def show_simulation_page():
                 # AB hỗ trợ 5 bước (trừ model 5)
                 if model_id != "model5":
                     step_options_ab[tr('screen2_step5')] = 5
-                
-                if st.checkbox(tr('screen2_select_all_steps_cb'), value=False, key='cb_all_steps_ab'):
-                    default_steps_ab = list(step_options_ab.keys())
-                else:
-                    default_steps_ab = [tr('screen2_step4')] if tr('screen2_step4') in step_options_ab else [list(step_options_ab.keys())[0]]
+                all_step_keys_ab = list(step_options_ab.keys())
+
+                # Định nghĩa hàm callback
+                def on_toggle_all_ab():
+                    is_checked = st.session_state.cb_all_steps_ab
+                    if is_checked:
+                        st.session_state.ms_steps_ab = all_step_keys_ab
+                    else:
+                        st.session_state.ms_steps_ab = [tr('screen2_step4')] if tr('screen2_step4') in all_step_keys_ab else [all_step_keys_ab[0]]
+                 # Render checkbox và gắn callback
+                st.checkbox(
+                    tr('screen2_select_all_steps_cb'),
+                    key='cb_all_steps_ab',
+                    on_change=on_toggle_all_ab
+                )
 
                 st.multiselect(
-                    tr('screen2_steps_label'), 
-                    options=list(step_options_ab.keys()), 
-                    default=default_steps_ab, 
-                    key='ms_steps_ab' # KEY RIÊNG
+                    tr('screen2_steps_label'),
+                    options=all_step_keys_ab,
+                    default=[tr('screen2_step4')] if tr('screen2_step4') in all_step_keys_ab else [all_step_keys_ab[0]],
+                    key='ms_steps_ab'
                 )
                 st.divider()
 
             # 2. Khu vực chi tiết cho Adams-Moulton
             if select_am:
-                # Dùng subheader khác để phân biệt, có thể thêm vào file ngôn ngữ
-                st.subheader(tr('screen2_details_group_am')) 
-                # AM chỉ hỗ trợ đến 4 bước
+                st.subheader(tr('screen2_details_group_am'))
                 step_options_am = {tr('screen2_step2'): 2, tr('screen2_step3'): 3, tr('screen2_step4'): 4}
-                
-                if st.checkbox(tr('screen2_select_all_steps_cb'), value=False, key='cb_all_steps_am'):
-                     default_steps_am = list(step_options_am.keys())
-                else:
-                     default_steps_am = [tr('screen2_step4')]
+                all_step_keys_am = list(step_options_am.keys())
 
-                st.multiselect(
-                    tr('screen2_steps_label'), 
-                    options=list(step_options_am.keys()), 
-                    default=default_steps_am, 
-                    key='ms_steps_am' # KEY RIÊNG
-                )
-                st.divider()
+            def on_toggle_all_am():
+                is_checked = st.session_state.cb_all_steps_am
+                if is_checked:
+                    st.session_state.ms_steps_am = all_step_keys_am
+                else:
+                    st.session_state.ms_steps_am = [tr('screen2_step4')]
+
+            st.checkbox(
+                tr('screen2_select_all_steps_cb'),
+                key='cb_all_steps_am',
+                on_change=on_toggle_all_am
+            )
+    
+            st.multiselect(
+                tr('screen2_steps_label'),
+                options=all_step_keys_am,
+                default=[tr('screen2_step4')],
+                key='ms_steps_am'
+            )
+            st.divider()
 
             # 3. Khu vực chi tiết cho Runge-Kutta
             if select_rk:
                 st.subheader(tr('screen2_details_group_rk'))
-                order_options = {tr('screen2_order2'): 2, tr('screen2_order3'): 3, tr('screen2_order4'): 4}
-                all_order_keys = list(order_options.keys())
-                
-                if st.checkbox(tr('screen2_select_all_steps_cb'), value=False, key='cb_all_orders_rk'):
-                    default_orders = all_order_keys
+                order_options_rk = {tr('screen2_order2'): 2, tr('screen2_order3'): 3, tr('screen2_order4'): 4}
+                all_order_keys_rk = list(order_options_rk.keys())
+
+            def on_toggle_all_rk():
+                is_checked = st.session_state.cb_all_orders_rk
+                if is_checked:
+                    st.session_state.ms_orders = all_order_keys_rk
                 else:
-                    default_orders = [tr('screen2_order4')]
-                
-                st.multiselect(
-                    tr('screen2_order_label'), 
-                    options=all_order_keys, 
-                    default=default_orders, 
-                    key='ms_orders' # Key này đã riêng biệt
-                )
-                st.divider()
+                    st.session_state.ms_orders = [tr('screen2_order4')]
+
+            st.checkbox(
+                tr('screen2_select_all_steps_cb'),
+                key='cb_all_orders_rk',
+                on_change=on_toggle_all_rk
+            )
+
+            st.multiselect(
+                tr('screen2_order_label'),
+                options=all_order_keys_rk,
+                default=[tr('screen2_order4')],
+                key='ms_orders'
+            )
+            st.divider()
 
             h_values = ["0.1", "0.05", "0.01", "0.005", "0.001"]
             selected_h_str = st.radio(tr('screen2_h_label'), options=h_values, index=2, horizontal=True)
