@@ -2798,159 +2798,157 @@ def show_simulation_page():
     
     # --- THANH BÊN (SIDEBAR) ---
     with st.sidebar:
-        def _cleanup_and_go_to_model_selection():
-            st.session_state.simulation_results = {}
-            st.session_state.validated_params = {}
-            keys_to_clear = [k for k in st.session_state if k.startswith('last_calculated_')]
-            for key in keys_to_clear:
-                if key in st.session_state:
-                    del st.session_state[key]
-            st.session_state.page = 'model_selection'
-            st.rerun()
+    def _cleanup_and_go_to_model_selection():
+        st.session_state.simulation_results = {}
+        st.session_state.validated_params = {}
+        keys_to_clear = [k for k in st.session_state if k.startswith('last_calculated_')]
+        for key in keys_to_clear:
+            if key in st.session_state:
+                del st.session_state[key]
+        st.session_state.page = 'model_selection'
+        st.rerun()
 
-        # SỬA LỖI 2: Thay use_container_width
-        if st.button(tr("screen2_back_button"), width='stretch', type="secondary"):
-            _cleanup_and_go_to_model_selection()
-        
-        st.title(tr("sidebar_title"))
-        st.header(tr('screen2_method_group'))
-        select_ab = st.checkbox(tr('screen2_method_ab'), value=True, key='cb_ab')
-        select_am = st.checkbox(tr('screen2_method_am'), value=False, key='cb_am')
-        select_rk = st.checkbox(tr('screen2_method_rk'), value=False, key='cb_rk')
-        st.divider()
-        with st.form(key='simulation_form'):
-            st.header(tr('screen2_details_group'))
-            # 1. Khu vực chi tiết cho Adams-Bashforth
-            if select_ab:
-                st.subheader(tr('screen2_details_group_ab'))
-                step_options_ab = {tr('screen2_step2'): 2, tr('screen2_step3'): 3, tr('screen2_step4'): 4}
-                # AB hỗ trợ 5 bước (trừ model 5)
-                if model_id != "model5":
-                    step_options_ab[tr('screen2_step5')] = 5
-                all_step_keys_ab = list(step_options_ab.keys())
-
-                # Định nghĩa hàm callback
-                def on_toggle_all_ab():
-                    is_checked = st.session_state.cb_all_steps_ab
-                    if is_checked:
-                        st.session_state.ms_steps_ab = all_step_keys_ab
-                    else:
-                        st.session_state.ms_steps_ab = [tr('screen2_step4')] if tr('screen2_step4') in all_step_keys_ab else [all_step_keys_ab[0]]
-                 # Render checkbox và gắn callback
-                st.checkbox(
-                    tr('screen2_select_all_steps_cb'),
-                    key='cb_all_steps_ab',
-                    on_change=on_toggle_all_ab
-                )
-
-                st.multiselect(
-                    tr('screen2_steps_label'),
-                    options=all_step_keys_ab,
-                    default=[tr('screen2_step4')] if tr('screen2_step4') in all_step_keys_ab else [all_step_keys_ab[0]],
-                    key='ms_steps_ab'
-                )
-                st.divider()
-
-            # 2. Khu vực chi tiết cho Adams-Moulton
-            if select_am:
-                st.subheader(tr('screen2_details_group_am'))
-                step_options_am = {tr('screen2_step2'): 2, tr('screen2_step3'): 3, tr('screen2_step4'): 4}
-                all_step_keys_am = list(step_options_am.keys())
-
-            def on_toggle_all_am():
-                is_checked = st.session_state.cb_all_steps_am
-                if is_checked:
-                    st.session_state.ms_steps_am = all_step_keys_am
-                else:
-                    st.session_state.ms_steps_am = [tr('screen2_step4')]
-
-            st.checkbox(
-                tr('screen2_select_all_steps_cb'),
-                key='cb_all_steps_am',
-                on_change=on_toggle_all_am
-            )
+    if st.button(tr("screen2_back_button"), use_container_width=True, type="secondary"):
+        _cleanup_and_go_to_model_selection()
     
-            st.multiselect(
-                tr('screen2_steps_label'),
-                options=all_step_keys_am,
-                default=[tr('screen2_step4')],
-                key='ms_steps_am'
-            )
-            st.divider()
+    st.title(tr("sidebar_title"))
+    st.header(tr('screen2_method_group'))
+    select_ab = st.checkbox(tr('screen2_method_ab'), value=True, key='cb_ab')
+    select_am = st.checkbox(tr('screen2_method_am'), value=False, key='cb_am')
+    select_rk = st.checkbox(tr('screen2_method_rk'), value=False, key='cb_rk')
+    st.divider()
 
-            # 3. Khu vực chi tiết cho Runge-Kutta
-            if select_rk:
-                st.subheader(tr('screen2_details_group_rk'))
-                order_options_rk = {tr('screen2_order2'): 2, tr('screen2_order3'): 3, tr('screen2_order4'): 4}
-                all_order_keys_rk = list(order_options_rk.keys())
+    # =========================================================================
+    # CÁC WIDGET TƯƠNG TÁC (CHECKBOX TẤT CẢ, MULTISELECT) ĐƯỢC ĐƯA RA NGOÀI FORM
+    # =========================================================================
+    st.header(tr('screen2_details_group'))
 
-            def on_toggle_all_rk():
-                is_checked = st.session_state.cb_all_orders_rk
-                if is_checked:
-                    st.session_state.ms_orders = all_order_keys_rk
-                else:
-                    st.session_state.ms_orders = [tr('screen2_order4')]
+    # 1. Khu vực chi tiết cho Adams-Bashforth (BÊN NGOÀI FORM)
+    if select_ab:
+        st.subheader(tr('screen2_details_group_ab'))
+        step_options_ab = {tr('screen2_step2'): 2, tr('screen2_step3'): 3, tr('screen2_step4'): 4}
+        if model_id != "model5":
+            step_options_ab[tr('screen2_step5')] = 5
+        all_step_keys_ab = list(step_options_ab.keys())
 
-            st.checkbox(
-                tr('screen2_select_all_steps_cb'),
-                key='cb_all_orders_rk',
-                on_change=on_toggle_all_rk
-            )
-
-            st.multiselect(
-                tr('screen2_order_label'),
-                options=all_order_keys_rk,
-                default=[tr('screen2_order4')],
-                key='ms_orders'
-            )
-            st.divider()
-
-            h_values = ["0.1", "0.05", "0.01", "0.005", "0.001"]
-            selected_h_str = st.radio(tr('screen2_h_label'), options=h_values, index=2, horizontal=True)
-            
-            st.header(tr('screen2_params_group'))
-			# Lấy dictionary chứa các bộ preset cho model hiện tại
-            default_presets = MODEL_DEFAULTS.get(model_id, {})
-            
-            # Logic mới:
-            # - Nếu là Model 5, nó có nhiều preset. Lấy preset đầu tiên.
-            # - Với các model khác, nó có cấu trúc {"default": {...}}. Lấy dictionary bên trong "default".
-            if model_id == "model5":
-                # Luôn lấy bộ preset đầu tiên làm giá trị mặc định để hiển thị
-                current_defaults = next(iter(default_presets.values()), {})
+        def on_toggle_all_ab():
+            is_checked = st.session_state.cb_all_steps_ab
+            if is_checked:
+                st.session_state.ms_steps_ab = all_step_keys_ab
             else:
-                # Lấy trực tiếp từ key "default"
-                current_defaults = default_presets.get("default", {})
-            param_inputs = {}
-            internal_keys = model_data.get("internal_param_keys", [])
-            
-            param_labels_key = f"param_keys_{st.session_state.lang}"
-            all_param_labels = model_data.get(param_labels_key, model_data.get("param_keys_vi", []))
-            for i, key in enumerate(internal_keys):
-                label = all_param_labels[i] if i < len(all_param_labels) else key
-                default_val = current_defaults.get(key, 1.0)
-                param_inputs[key] = st.number_input(label, value=float(default_val), step=1e-4, format="%.4f", key=f"param_{model_id}_{key}")
+                st.session_state.ms_steps_ab = [tr('screen2_step4')] if tr('screen2_step4') in all_step_keys_ab else [all_step_keys_ab[0]]
 
-            selected_component = 'x'
-            if model_id == "model6":
-                comp_data_m6 = model_data.get("components", {})
-                comp_options_m6_display = [tr(v) for v in comp_data_m6.values()]
-                comp_options_m6_keys = list(comp_data_m6.keys())
-                selected_comp_disp_m6 = st.radio(tr('model6_select_component'), comp_options_m6_display, horizontal=True, key=f"comp_{model_id}")
-                selected_component = comp_options_m6_keys[comp_options_m6_display.index(selected_comp_disp_m6)]
-            elif model_id == "model5":
-                comp_options_m5 = {tr('model5_component_x'): 'x', tr('model5_component_y'): 'y'}
-                selected_comp_disp_m5 = st.radio(tr('model5_select_component'), list(comp_options_m5.keys()), horizontal=True, key=f"comp_{model_id}")
-                selected_component = comp_options_m5[selected_comp_disp_m5]
-            
-            # SỬA LỖI 2: Thay use_container_width
-            submitted = st.form_submit_button(tr('screen2_init_button'), type="primary", width='stretch')
+        st.checkbox(
+            tr('screen2_select_all_steps_cb'),
+            key='cb_all_steps_ab',
+            on_change=on_toggle_all_ab
+        )
+        st.multiselect(
+            tr('screen2_steps_label'),
+            options=all_step_keys_ab,
+            default=[tr('screen2_step4')] if tr('screen2_step4') in all_step_keys_ab else [all_step_keys_ab[0]],
+            key='ms_steps_ab'
+        )
+        st.divider()
 
-        # SỬA LỖI 2: Thay use_container_width
-        if st.button(tr('screen2_refresh_button'), width='stretch'):
-            st.session_state.simulation_results = {}
-            st.session_state.validated_params = {}
-            st.rerun()
+    # 2. Khu vực chi tiết cho Adams-Moulton (BÊN NGOÀI FORM)
+    if select_am:
+        st.subheader(tr('screen2_details_group_am'))
+        step_options_am = {tr('screen2_step2'): 2, tr('screen2_step3'): 3, tr('screen2_step4'): 4}
+        all_step_keys_am = list(step_options_am.keys())
+
+        def on_toggle_all_am():
+            is_checked = st.session_state.cb_all_steps_am
+            if is_checked:
+                st.session_state.ms_steps_am = all_step_keys_am
+            else:
+                st.session_state.ms_steps_am = [tr('screen2_step4')]
+
+        st.checkbox(
+            tr('screen2_select_all_steps_cb'),
+            key='cb_all_steps_am',
+            on_change=on_toggle_all_am
+        )
+        st.multiselect(
+            tr('screen2_steps_label'),
+            options=all_step_keys_am,
+            default=[tr('screen2_step4')],
+            key='ms_steps_am'
+        )
+        st.divider()
+
+    # 3. Khu vực chi tiết cho Runge-Kutta (BÊN NGOÀI FORM)
+    if select_rk:
+        st.subheader(tr('screen2_details_group_rk'))
+        order_options_rk = {tr('screen2_order2'): 2, tr('screen2_order3'): 3, tr('screen2_order4'): 4}
+        all_order_keys_rk = list(order_options_rk.keys())
+
+        def on_toggle_all_rk():
+            is_checked = st.session_state.cb_all_orders_rk
+            if is_checked:
+                st.session_state.ms_orders = all_order_keys_rk
+            else:
+                st.session_state.ms_orders = [tr('screen2_order4')]
+
+        st.checkbox(
+            tr('screen2_select_all_steps_cb'),
+            key='cb_all_orders_rk',
+            on_change=on_toggle_all_rk
+        )
+        st.multiselect(
+            tr('screen2_order_label'),
+            options=all_order_keys_rk,
+            default=[tr('screen2_order4')],
+            key='ms_orders'
+        )
+        st.divider()
+
+    # =========================================================================
+    # FORM CHỈ CHỨA CÁC THAM SỐ CẦN GỬI ĐI CÙNG LÚC
+    # =========================================================================
+    with st.form(key='simulation_form'):
+        st.header(tr('screen2_params_group'))
+        
+        h_values = ["0.1", "0.05", "0.01", "0.005", "0.001"]
+        selected_h_str = st.radio(tr('screen2_h_label'), options=h_values, index=2, horizontal=True)
+        
+        # Lấy dictionary chứa các bộ preset cho model hiện tại
+        default_presets = MODEL_DEFAULTS.get(model_id, {})
+        
+        # Logic mới:
+        if model_id == "model5":
+            current_defaults = next(iter(default_presets.values()), {})
+        else:
+            current_defaults = default_presets.get("default", {})
+
+        param_inputs = {}
+        internal_keys = model_data.get("internal_param_keys", [])
+        
+        param_labels_key = f"param_keys_{st.session_state.lang}"
+        all_param_labels = model_data.get(param_labels_key, model_data.get("param_keys_vi", []))
+        for i, key in enumerate(internal_keys):
+            label = all_param_labels[i] if i < len(all_param_labels) else key
+            default_val = current_defaults.get(key, 1.0)
+            param_inputs[key] = st.number_input(label, value=float(default_val), step=1e-4, format="%.4f", key=f"param_{model_id}_{key}")
+
+        selected_component = 'x'
+        if model_id == "model6":
+            comp_data_m6 = model_data.get("components", {})
+            comp_options_m6_display = [tr(v) for v in comp_data_m6.values()]
+            comp_options_m6_keys = list(comp_data_m6.keys())
+            selected_comp_disp_m6 = st.radio(tr('model6_select_component'), comp_options_m6_display, horizontal=True, key=f"comp_{model_id}")
+            selected_component = comp_options_m6_keys[comp_options_m6_display.index(selected_comp_disp_m6)]
+        elif model_id == "model5":
+            comp_options_m5 = {tr('model5_component_x'): 'x', tr('model5_component_y'): 'y'}
+            selected_comp_disp_m5 = st.radio(tr('model5_select_component'), list(comp_options_m5.keys()), horizontal=True, key=f"comp_{model_id}")
+            selected_component = comp_options_m5[selected_comp_disp_m5]
+        
+        submitted = st.form_submit_button(tr('screen2_init_button'), type="primary", use_container_width=True)
+
+    if st.button(tr('screen2_refresh_button'), use_container_width=True):
+        st.session_state.simulation_results = {}
+        st.session_state.validated_params = {}
+        st.rerun()
 
     # --- KHU VỰC HIỂN THỊ CHÍNH ---
     st.header(tr('simulation_results_title'))
