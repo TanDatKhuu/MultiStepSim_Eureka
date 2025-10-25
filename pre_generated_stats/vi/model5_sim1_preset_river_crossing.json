@@ -1,0 +1,17 @@
+{
+    "Vận tốc thuyền (v):": {
+        "value": "4.00"
+    },
+    "Vận tốc dòng nước (u):": {
+        "value": "2.00"
+    },
+    "Thời gian mô phỏng:": {
+        "value": "1.62 (Đơn vị thời gian)"
+    },
+    "Thuyền có đến được đích không?": {
+        "value": "Có"
+    },
+    "Vị trí cuối cùng của thuyền:": {
+        "value": "(0.01, -0.09)"
+    }
+}

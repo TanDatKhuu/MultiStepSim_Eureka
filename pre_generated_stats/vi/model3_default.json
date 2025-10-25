@@ -1,0 +1,17 @@
+{
+    "Tham số tốc độ lây nhiễm (r):": {
+        "value": "0.004037"
+    },
+    "Tổng số cá thể ban đầu:": {
+        "value": 51
+    },
+    "Số lượng cá thể chưa nhiễm:": {
+        "value": 0
+    },
+    "Số lượng cá thể bị nhiễm:": {
+        "value": 51
+    },
+    "Thời gian mô phỏng:": {
+        "value": "35.28 (Đơn vị thời gian)"
+    }
+}
